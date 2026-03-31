@@ -69,6 +69,22 @@ docker compose down
 1. Garantir Ruby 3.2.11.
 2. Instalar gems:
 
+```
+sudo apt install -y \
+build-essential \
+libssl-dev \
+libyaml-dev \
+libreadline-dev \
+zlib1g-dev \
+libffi-dev \
+libgdbm-dev \
+libncurses5-dev \
+libdb-dev \
+autoconf \
+bison \
+libtool
+```
+
 ```bash
 bundle install
 ```
