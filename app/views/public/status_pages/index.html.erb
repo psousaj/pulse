@@ -1,0 +1,36 @@
+<main class="status-page">
+  <h1>Service Status</h1>
+
+  <section>
+    <h2>Services</h2>
+    <% if @services.any? %>
+      <ul>
+        <% @services.each do |service| %>
+          <li>
+            <strong><%= service.name %></strong>
+            - <%= service.current_status %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>No public services configured.</p>
+    <% end %>
+  </section>
+
+  <section>
+    <h2>Recent incidents</h2>
+    <% if @recent_incidents.any? %>
+      <ul>
+        <% @recent_incidents.each do |incident| %>
+          <li>
+            <strong><%= incident.service.name %></strong>
+            - <%= incident.title %>
+            (<%= incident.state %>)
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>No recent incidents.</p>
+    <% end %>
+  </section>
+</main>

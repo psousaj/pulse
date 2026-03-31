@@ -1,0 +1,35 @@
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 200
+  workers:
+    - queues:
+        - scheduler
+      threads: 1
+      processes: 1
+      polling_interval: 0.5
+    - queues:
+        - checks_fast
+      threads: <%= ENV.fetch("CHECKS_FAST_THREADS", 8) %>
+      processes: <%= ENV.fetch("CHECKS_FAST_PROCESSES", 1) %>
+      polling_interval: 0.1
+    - queues:
+        - checks_regular
+      threads: <%= ENV.fetch("CHECKS_REGULAR_THREADS", 12) %>
+      processes: <%= ENV.fetch("CHECKS_REGULAR_PROCESSES", 1) %>
+      polling_interval: 0.2
+    - queues:
+        - notifications
+        - maintenance
+      threads: 2
+      processes: 1
+      polling_interval: 0.5
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: production
+      SQLITE_PRIMARY_DB: storage/production.sqlite3
+      SQLITE_CACHE_DB: storage/production_cache.sqlite3
+      SQLITE_QUEUE_DB: storage/production_queue.sqlite3
+      SQLITE_CABLE_DB: storage/production_cable.sqlite3
+      FERRUM_BROWSER_URL: http://chrome:3000
+    command: ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/rails/storage
+    depends_on:
+      - chrome
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: production
+      SQLITE_PRIMARY_DB: storage/production.sqlite3
+      SQLITE_CACHE_DB: storage/production_cache.sqlite3
+      SQLITE_QUEUE_DB: storage/production_queue.sqlite3
+      SQLITE_CABLE_DB: storage/production_cable.sqlite3
+      FERRUM_BROWSER_URL: http://chrome:3000
+    command: ["bash", "-lc", "./bin/rails db:prepare && ./bin/jobs start"]
+    volumes:
+      - ./storage:/rails/storage
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  chrome:
+    image: browserless/chrome:latest
+    environment:
+      PORT: 3000
+      MAX_CONCURRENT_SESSIONS: 2
+      PREBOOT_CHROME: "true"
+      CONNECTION_TIMEOUT: 60000
+      EXIT_ON_HEALTH_FAILURE: "true"
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  discord-bot:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: production
+      PULSE_API_BASE_URL: http://web:3000
+    command: ["bash", "-lc", "bundle exec ruby bot/main.rb"]
+    depends_on:
+      - web
+    restart: unless-stopped

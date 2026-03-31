@@ -1,0 +1,31 @@
+<main class="dashboard">
+  <h1>Pulse Monitor</h1>
+
+  <section>
+    <h2>Overview</h2>
+    <ul>
+      <li>Total services: <%= @total_services %></li>
+      <li>Operational: <%= @operational_services %></li>
+      <li>Degraded: <%= @degraded_services %></li>
+      <li>Down: <%= @down_services %></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Recent incidents</h2>
+    <% if @recent_incidents.any? %>
+      <ul>
+        <% @recent_incidents.each do |incident| %>
+          <li>
+            <strong><%= incident.service.name %></strong>
+            <%= incident.severity %>
+            (<%= incident.state %>)
+            - <%= incident.opened_at %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>No incidents yet.</p>
+    <% end %>
+  </section>
+</main>
