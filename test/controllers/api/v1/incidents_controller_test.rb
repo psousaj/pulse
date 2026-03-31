@@ -54,6 +54,24 @@ module Api
         assert_equal "open", payload["state"]
       end
 
+      test "returns not found when incident belongs to another account" do
+        other_account = create_account
+        other_service = create_service(account: other_account)
+        other_check = create_service_check(service: other_service)
+        external_incident = create_incident(
+          account: other_account,
+          service: other_service,
+          service_check: other_check,
+          title: "External Incident"
+        )
+
+        with_env("JWT_SECRET" => "jwt-test-secret") do
+          get "/api/v1/incidents/#{external_incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        end
+
+        assert_response :not_found
+      end
+
       private
 
       def create_incident(account:, service:, service_check:, title:)
