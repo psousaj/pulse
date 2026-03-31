@@ -1,4 +1,22 @@
 module TestDataHelper
+  def with_temporary_class_method(klass, method_name, replacement)
+    singleton = klass.singleton_class
+    backup_name = "__pulse_test_original_#{method_name}"
+    had_original = singleton.method_defined?(method_name) || singleton.private_method_defined?(method_name)
+
+    singleton.alias_method(backup_name, method_name) if had_original
+    klass.define_singleton_method(method_name, replacement)
+
+    yield
+  ensure
+    if had_original
+      singleton.alias_method(method_name, backup_name)
+      singleton.remove_method(backup_name)
+    else
+      singleton.remove_method(method_name)
+    end
+  end
+
   def with_env(overrides)
     previous = {}
     overrides.each do |key, value|
