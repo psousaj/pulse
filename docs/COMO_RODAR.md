@@ -67,6 +67,12 @@ docker compose down
 ## Opcao 2: Rodar local com Ruby
 
 1. Garantir Ruby 3.2.11.
+
+```bash
+rbenv local 3.2.11
+ruby -v
+```
+
 2. Instalar gems:
 
 ```
@@ -89,26 +95,40 @@ libtool
 bundle install
 ```
 
-3. Preparar banco:
+3. Copiar e preencher o `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Campos minimos para local:
+
+- `RAILS_MASTER_KEY`: pode usar `cat config/master.key`
+- `JWT_SECRET`: gere com `openssl rand -hex 32`
+- `RAILS_MAX_THREADS`: mantenha `20` para casar com o worker do Solid Queue
+
+Observacao: agora o modo Ruby local carrega `.env` automaticamente no `bin/rails` e `bin/jobs`.
+
+4. Preparar banco:
 
 ```bash
 bin/rails db:prepare
 bin/rails db:seed
 ```
 
-4. Subir app (terminal 1):
+5. Subir app (terminal 1):
 
 ```bash
 bin/rails server
 ```
 
-5. Subir worker (terminal 2):
+6. Subir worker (terminal 2):
 
 ```bash
 bin/jobs start
 ```
 
-6. Acessar app:
+7. Acessar app:
 
 - http://localhost:3000
 
@@ -131,17 +151,55 @@ bin/rails "pulse:issue_api_token[user@example.com,discord-bot]"
 - `npm install` -> `bundle install`
 - `npm run dev` -> `bin/rails server`
 - worker/fila separado -> `bin/jobs start`
-- `.env` continua sendo o ponto de configuracao
+- executaveis locais do projeto -> pasta `bin/` (equivale ao papel do `node_modules/.bin` no Node)
+- `.env` tambem e usado no modo Ruby local (carregado no boot da aplicacao)
+
+## O que e a pasta bin
+
+Nao e gambiarra. Em apps Rails, a pasta `bin/` vem por padrao.
+
+- `bin/rails`, `bin/rake`, `bin/setup`: wrappers do projeto para usar as versoes corretas de gems.
+- `bin/jobs`: wrapper do Solid Queue para subir scheduler/worker com a config do app.
+- Beneficio: os comandos ficam reproduziveis por projeto, igual ao conceito de binarios locais no ecossistema Node.
 
 ## Problemas comuns
 
 `RAILS_MASTER_KEY missing`
 
-- Ajuste `RAILS_MASTER_KEY` no `.env`.
+- Defina no `.env`, por exemplo:
+
+```bash
+RAILS_MASTER_KEY=cole_aqui_o_valor_de_config_master_key
+```
 
 `JWT_SECRET is missing`
 
-- Defina `JWT_SECRET` no `.env`.
+- Defina no `.env`, por exemplo:
+
+```bash
+JWT_SECRET=gere_com_openssl_rand_-hex_32
+```
+
+`Could not find table 'solid_queue_recurring_tasks'`
+
+- Criar as tabelas de fila no banco atual:
+
+```bash
+bin/rails runner "load Rails.root.join('db/queue_schema.rb')"
+```
+
+`Solid Queue is configured to use 14 threads but the database connection pool is 5`
+
+- Defina no `.env`:
+
+```bash
+RAILS_MAX_THREADS=20
+```
+
+`libsodium not available`
+
+- Aviso do discordrb: nao bloqueia o app/worker.
+- So impacta suporte a voz no Discord.
 
 Banco SQLite bloqueado (intermitente)
 

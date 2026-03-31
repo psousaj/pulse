@@ -489,6 +489,7 @@ DEPENDENCIES
   capybara
   debug
   discordrb
+  dotenv (~> 3.2)
   ferrum
   image_processing (~> 1.2)
   importmap-rails
