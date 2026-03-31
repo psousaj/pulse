@@ -2,6 +2,10 @@
 
 Personal uptime/healthcheck monitor built with Rails 8.1, Solid Queue, Solid Cache, and SQLite in WAL mode. The architecture is designed to stay lightweight for self-hosting while preparing for multi-user and micro-SaaS evolution.
 
+## Onboarding
+
+New to Ruby/Rails or coming from TypeScript? See [docs/COMO_RODAR.md](docs/COMO_RODAR.md) for a practical run guide.
+
 ## Stack
 
 - Ruby on Rails 8.1
