@@ -3,6 +3,7 @@ require "digest"
 class HeartbeatToken < ApplicationRecord
   belongs_to :account
   belongs_to :service
+  belongs_to :monitor, class_name: "PulseMonitor", optional: true
 
   attr_reader :plain_token
 

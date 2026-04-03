@@ -60,6 +60,71 @@ module TestDataHelper
     )
   end
 
+  def create_monitor(account:, service: nil, name: "Monitor #{SecureRandom.hex(3)}", slug: "monitor-#{SecureRandom.hex(4)}", strategy: "http_polling", interval_seconds: 60, config_json: { "url" => "https://example.com/health" })
+    PulseMonitor.create!(
+      account: account,
+      service: service,
+      name: name,
+      slug: slug,
+      strategy: strategy,
+      interval_seconds: interval_seconds,
+      enabled: true,
+      config_json: config_json
+    )
+  end
+
+  def create_health_event(monitor:, account: monitor.account, service: monitor.service, monitor_source_binding: nil, source: "internal", status: "up", authoritative: true, checked_at: Time.current, error_message: nil, metadata_json: {})
+    HealthEvent.create!(
+      account: account,
+      service: service,
+      monitor: monitor,
+      monitor_source_binding: monitor_source_binding,
+      source: source,
+      status: status,
+      authoritative: authoritative,
+      error_message: error_message,
+      metadata_json: metadata_json,
+      checked_at: checked_at
+    )
+  end
+
+  def create_integration_endpoint(account:, provider: "zabbix", name: "#{provider}-#{SecureRandom.hex(3)}")
+    IntegrationEndpoint.create!(
+      account: account,
+      provider: provider,
+      name: name,
+      enabled: true
+    )
+  end
+
+  def create_monitor_source_binding(monitor:, kind: "integration", role: "primary", integration_endpoint: nil, external_ref: "external-#{SecureRandom.hex(3)}", token_digest: nil, config_json: {})
+    MonitorSourceBinding.create!(
+      account: monitor.account,
+      monitor: monitor,
+      integration_endpoint: integration_endpoint,
+      kind: kind,
+      provider: integration_endpoint&.provider,
+      role: role,
+      external_ref: external_ref,
+      token_digest: token_digest,
+      enabled: true,
+      config_json: config_json
+    )
+  end
+
+  def create_monitor_incident(monitor:, service: monitor.service, severity: "down", opened_at: Time.current)
+    Incident.create!(
+      account: monitor.account,
+      service: service,
+      monitor: monitor,
+      state: "open",
+      severity: severity,
+      title: "#{monitor.name} #{severity}",
+      trigger_kind: "check_failure",
+      opened_at: opened_at
+    )
+  end
+
   def http_check_type
     HealthCheckType.find_or_create_by!(key: "http") do |type|
       type.name = "HTTP"

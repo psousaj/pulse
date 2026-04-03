@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_02_121500) do
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "default_alert_interval_minutes", default: 10, null: false
@@ -122,6 +122,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
     t.index ["key"], name: "index_health_check_types_on_key", unique: true
   end
 
+  create_table "health_events", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.boolean "authoritative", default: true, null: false
+    t.datetime "checked_at", null: false
+    t.datetime "created_at", null: false
+    t.integer "dns_ms"
+    t.text "error_message"
+    t.integer "latency_ms"
+    t.json "metadata_json"
+    t.integer "monitor_id", null: false
+    t.integer "monitor_source_binding_id"
+    t.string "screenshot_path"
+    t.integer "service_id"
+    t.string "source", null: false
+    t.string "status", null: false
+    t.integer "tls_ms"
+    t.integer "ttfb_ms"
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_health_events_on_account_id"
+    t.index ["monitor_id", "authoritative", "checked_at"], name: "idx_health_events_authoritative_order"
+    t.index ["monitor_id", "checked_at"], name: "index_health_events_on_monitor_id_and_checked_at"
+    t.index ["monitor_id"], name: "index_health_events_on_monitor_id"
+    t.index ["monitor_source_binding_id"], name: "index_health_events_on_monitor_source_binding_id"
+    t.index ["service_id"], name: "index_health_events_on_service_id"
+  end
+
   create_table "heartbeat_tokens", force: :cascade do |t|
     t.integer "account_id", null: false
     t.datetime "created_at", null: false
@@ -130,12 +156,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
     t.integer "expected_interval_seconds", default: 60, null: false
     t.integer "grace_seconds", default: 30, null: false
     t.datetime "last_heartbeat_at"
+    t.integer "monitor_id"
     t.datetime "next_expected_at"
     t.integer "service_id", null: false
     t.string "token_digest", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_heartbeat_tokens_on_account_id"
     t.index ["enabled", "next_expected_at"], name: "index_heartbeat_tokens_on_enabled_and_next_expected_at"
+    t.index ["monitor_id"], name: "index_heartbeat_tokens_on_monitor_id"
     t.index ["service_id"], name: "index_heartbeat_tokens_on_service_id"
     t.index ["token_digest"], name: "index_heartbeat_tokens_on_token_digest", unique: true
   end
@@ -160,13 +188,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
     t.datetime "acknowledged_at"
     t.integer "acknowledged_by_user_id"
     t.datetime "created_at", null: false
+    t.integer "duration_seconds"
     t.integer "first_check_result_id"
+    t.integer "first_health_event_id"
     t.integer "last_check_result_id"
+    t.integer "last_health_event_id"
+    t.integer "monitor_id"
     t.datetime "opened_at", null: false
     t.datetime "resolved_at"
     t.integer "resolved_by_user_id"
+    t.text "root_cause"
     t.integer "service_check_id"
-    t.integer "service_id", null: false
+    t.integer "service_id"
     t.string "severity", default: "down", null: false
     t.string "state", default: "open", null: false
     t.string "title", null: false
@@ -175,11 +208,111 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
     t.index ["account_id"], name: "index_incidents_on_account_id"
     t.index ["acknowledged_by_user_id"], name: "index_incidents_on_acknowledged_by_user_id"
     t.index ["first_check_result_id"], name: "index_incidents_on_first_check_result_id"
+    t.index ["first_health_event_id"], name: "index_incidents_on_first_health_event_id"
     t.index ["last_check_result_id"], name: "index_incidents_on_last_check_result_id"
+    t.index ["last_health_event_id"], name: "index_incidents_on_last_health_event_id"
+    t.index ["monitor_id", "state"], name: "index_incidents_on_monitor_id_and_state"
+    t.index ["monitor_id"], name: "index_incidents_on_monitor_id"
     t.index ["resolved_by_user_id"], name: "index_incidents_on_resolved_by_user_id"
     t.index ["service_check_id"], name: "index_incidents_on_service_check_id"
     t.index ["service_id", "state"], name: "index_incidents_on_service_id_and_state"
     t.index ["service_id"], name: "index_incidents_on_service_id"
+  end
+
+  create_table "integration_endpoints", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.json "config_json"
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.string "secret_digest", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "provider", "name"], name: "idx_on_account_id_provider_name_12909240b9", unique: true
+    t.index ["account_id"], name: "index_integration_endpoints_on_account_id"
+    t.index ["secret_digest"], name: "index_integration_endpoints_on_secret_digest", unique: true
+  end
+
+  create_table "integration_event_ingresses", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.datetime "created_at", null: false
+    t.string "error_code"
+    t.string "external_ref"
+    t.integer "health_event_id"
+    t.string "idempotency_key", null: false
+    t.integer "integration_endpoint_id", null: false
+    t.integer "monitor_source_binding_id"
+    t.json "payload_json"
+    t.datetime "processed_at"
+    t.string "provider", null: false
+    t.datetime "received_at", null: false
+    t.string "status", default: "received", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_integration_event_ingresses_on_account_id"
+    t.index ["health_event_id"], name: "index_integration_event_ingresses_on_health_event_id"
+    t.index ["integration_endpoint_id", "idempotency_key"], name: "idx_integration_ingresses_dedup", unique: true
+    t.index ["integration_endpoint_id"], name: "index_integration_event_ingresses_on_integration_endpoint_id"
+    t.index ["monitor_source_binding_id"], name: "index_integration_event_ingresses_on_monitor_source_binding_id"
+  end
+
+  create_table "monitor_sla_rollups", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.decimal "degraded_pct", precision: 7, scale: 4, default: "0.0", null: false
+    t.integer "degraded_seconds", default: 0, null: false
+    t.decimal "down_pct", precision: 7, scale: 4, default: "0.0", null: false
+    t.integer "down_seconds", default: 0, null: false
+    t.integer "monitor_id", null: false
+    t.datetime "updated_at"
+    t.decimal "uptime_pct", precision: 7, scale: 4, default: "0.0", null: false
+    t.datetime "window_end", null: false
+    t.string "window_key", null: false
+    t.datetime "window_start", null: false
+    t.index ["account_id"], name: "index_monitor_sla_rollups_on_account_id"
+    t.index ["monitor_id", "window_key"], name: "index_monitor_sla_rollups_on_monitor_id_and_window_key", unique: true
+    t.index ["monitor_id"], name: "index_monitor_sla_rollups_on_monitor_id"
+  end
+
+  create_table "monitor_source_bindings", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.json "config_json"
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "external_ref"
+    t.integer "integration_endpoint_id"
+    t.string "kind", null: false
+    t.integer "monitor_id", null: false
+    t.string "provider"
+    t.string "role", default: "corroborative", null: false
+    t.string "token_digest"
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_monitor_source_bindings_on_account_id"
+    t.index ["integration_endpoint_id"], name: "index_monitor_source_bindings_on_integration_endpoint_id"
+    t.index ["monitor_id", "kind", "provider", "external_ref"], name: "idx_monitor_source_bindings_uniqueness", unique: true
+    t.index ["monitor_id"], name: "index_monitor_source_bindings_on_monitor_id"
+    t.index ["token_digest"], name: "index_monitor_source_bindings_on_token_digest", unique: true
+  end
+
+  create_table "monitors", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.json "config_json"
+    t.datetime "created_at", null: false
+    t.string "current_status", default: "up", null: false
+    t.boolean "enabled", default: true, null: false
+    t.integer "interval_seconds"
+    t.datetime "last_run_at"
+    t.datetime "lease_expires_at"
+    t.string "lease_token"
+    t.string "name", null: false
+    t.datetime "next_run_at"
+    t.integer "service_id"
+    t.string "slug", null: false
+    t.string "strategy", default: "event_only", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "slug"], name: "index_monitors_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_monitors_on_account_id"
+    t.index ["enabled", "next_run_at"], name: "index_monitors_on_enabled_and_next_run_at"
+    t.index ["lease_expires_at"], name: "index_monitors_on_lease_expires_at"
+    t.index ["service_id"], name: "index_monitors_on_service_id"
   end
 
   create_table "notification_channels", force: :cascade do |t|
@@ -330,17 +463,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_235900) do
   add_foreign_key "check_results", "accounts"
   add_foreign_key "check_results", "service_checks"
   add_foreign_key "check_results", "services"
+  add_foreign_key "health_events", "accounts"
+  add_foreign_key "health_events", "monitor_source_bindings"
+  add_foreign_key "health_events", "monitors"
+  add_foreign_key "health_events", "services"
   add_foreign_key "heartbeat_tokens", "accounts"
+  add_foreign_key "heartbeat_tokens", "monitors"
   add_foreign_key "heartbeat_tokens", "services"
   add_foreign_key "incident_events", "accounts"
   add_foreign_key "incident_events", "incidents"
   add_foreign_key "incidents", "accounts"
   add_foreign_key "incidents", "check_results", column: "first_check_result_id"
   add_foreign_key "incidents", "check_results", column: "last_check_result_id"
+  add_foreign_key "incidents", "health_events", column: "first_health_event_id"
+  add_foreign_key "incidents", "health_events", column: "last_health_event_id"
+  add_foreign_key "incidents", "monitors"
   add_foreign_key "incidents", "service_checks"
   add_foreign_key "incidents", "services"
   add_foreign_key "incidents", "users", column: "acknowledged_by_user_id"
   add_foreign_key "incidents", "users", column: "resolved_by_user_id"
+  add_foreign_key "integration_endpoints", "accounts"
+  add_foreign_key "integration_event_ingresses", "accounts"
+  add_foreign_key "integration_event_ingresses", "health_events"
+  add_foreign_key "integration_event_ingresses", "integration_endpoints"
+  add_foreign_key "integration_event_ingresses", "monitor_source_bindings"
+  add_foreign_key "monitor_sla_rollups", "accounts"
+  add_foreign_key "monitor_sla_rollups", "monitors"
+  add_foreign_key "monitor_source_bindings", "accounts"
+  add_foreign_key "monitor_source_bindings", "integration_endpoints"
+  add_foreign_key "monitor_source_bindings", "monitors"
+  add_foreign_key "monitors", "accounts"
+  add_foreign_key "monitors", "services"
   add_foreign_key "notification_channels", "accounts"
   add_foreign_key "notification_deliveries", "accounts"
   add_foreign_key "notification_deliveries", "incidents"

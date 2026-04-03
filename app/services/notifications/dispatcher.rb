@@ -28,7 +28,10 @@ module Notifications
     attr_reader :incident, :event_type
 
     def channels
-      service_channel_ids = incident.service.service_notifications.where(enabled: true).pluck(:notification_channel_id)
+      service = incident.notification_service
+      return incident.account.notification_channels.defaults.where(enabled: true) if service.blank?
+
+      service_channel_ids = service.service_notifications.where(enabled: true).pluck(:notification_channel_id)
       service_channels = NotificationChannel.where(id: service_channel_ids, enabled: true)
 
       return service_channels if service_channels.any?

@@ -11,7 +11,11 @@ module Api
       return render json: { error: "rate_limited" }, status: :too_many_requests if rate_limited?(heartbeat_token)
 
       heartbeat_token.mark_seen!
-      Monitoring::IncidentEngine.resolve_heartbeat_incidents!(heartbeat_token)
+      if heartbeat_token.monitor.present?
+        Monitoring::HeartbeatEventRecorder.emit_up!(heartbeat_token)
+      else
+        Monitoring::IncidentEngine.resolve_heartbeat_incidents!(heartbeat_token)
+      end
 
       render json: { status: "accepted", service: heartbeat_token.service.slug }, status: :accepted
     end

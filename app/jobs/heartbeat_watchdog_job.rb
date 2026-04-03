@@ -7,7 +7,11 @@ class HeartbeatWatchdogJob < ApplicationJob
     HeartbeatToken.where(enabled: true)
       .where("next_expected_at IS NOT NULL AND next_expected_at < ?", now)
       .find_each do |heartbeat_token|
-      Monitoring::IncidentEngine.open_heartbeat_incident!(heartbeat_token)
+      if heartbeat_token.monitor.present?
+        Monitoring::HeartbeatEventRecorder.emit_down!(heartbeat_token, checked_at: now)
+      else
+        Monitoring::IncidentEngine.open_heartbeat_incident!(heartbeat_token)
+      end
     end
   end
 end

@@ -1,6 +1,7 @@
 class Service < ApplicationRecord
   belongs_to :account
 
+  has_many :monitors, class_name: "PulseMonitor", dependent: :nullify
   has_many :service_checks, dependent: :destroy
   has_many :check_results, dependent: :delete_all
   has_many :incidents, dependent: :delete_all

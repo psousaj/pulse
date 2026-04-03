@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 development:
+  schedule_monitors:
+    class: MonitorCheckSchedulerJob
+    queue: scheduler
+    schedule: every 10 seconds
   schedule_checks:
     class: CheckSchedulerJob
     queue: scheduler
@@ -22,8 +26,16 @@ development:
     class: SlaRollupJob
     queue: maintenance
     schedule: every 5 minutes
+  monitor_sla_rollups:
+    class: MonitorSlaRollupJob
+    queue: maintenance
+    schedule: every 5 minutes
 
 production:
+  schedule_monitors:
+    class: MonitorCheckSchedulerJob
+    queue: scheduler
+    schedule: every 10 seconds
   schedule_checks:
     class: CheckSchedulerJob
     queue: scheduler
@@ -34,6 +46,10 @@ production:
     schedule: every minute
   sla_rollups:
     class: SlaRollupJob
+    queue: maintenance
+    schedule: every 5 minutes
+  monitor_sla_rollups:
+    class: MonitorSlaRollupJob
     queue: maintenance
     schedule: every 5 minutes
   clear_solid_queue_finished_jobs:

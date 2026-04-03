@@ -78,5 +78,23 @@ module Api
         Rails.cache = original_cache
       end
     end
+
+    test "emits a health event when the heartbeat token is linked to a monitor" do
+      monitor = create_monitor(account: @account, service: @service, strategy: "event_only", interval_seconds: nil, config_json: {})
+      @heartbeat.update!(monitor: monitor)
+      create_monitor_source_binding(monitor: monitor, kind: "heartbeat", role: "primary", external_ref: nil, token_digest: @heartbeat.token_digest)
+
+      assert_difference("HealthEvent.count", 1) do
+        assert_enqueued_jobs 1, only: ProcessHealthEventJob do
+          post "/api/heartbeat/#{@raw_token}"
+        end
+      end
+
+      assert_response :accepted
+      event = HealthEvent.order(:id).last
+      assert_equal monitor, event.monitor
+      assert_equal "heartbeat", event.source
+      assert_equal "up", event.status
+    end
   end
 end

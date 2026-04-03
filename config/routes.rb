@@ -18,6 +18,10 @@ Rails.application.routes.draw do
 
   get "status" => "public/status_pages#index"
 
+  namespace :integrations do
+    post "zabbix/events" => "zabbix_events#create"
+  end
+
   post "api/heartbeat/:token" => "api/heartbeats#create"
 
   namespace :api do
