@@ -107,7 +107,14 @@ Campos minimos para local:
 - `JWT_SECRET`: gere com `openssl rand -hex 32`
 - `SQLITE_MAX_CONNECTIONS`: opcional, so ajuste se quiser um pool diferente do padrao local `20`
 
+Para login web com GitHub, tambem precisa definir:
+
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+
 Observacao: agora o modo Ruby local carrega `.env` automaticamente no `bin/rails` e `bin/jobs`.
+
+Se essas duas variaveis nao estiverem presentes no boot da aplicacao, a rota `/auth/github` nao sera registrada pelo OmniAuth e o login web ficara indisponivel.
 
 4. Preparar banco:
 

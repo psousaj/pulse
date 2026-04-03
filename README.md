@@ -40,13 +40,20 @@ The project runs with 4 services:
 	bin/rails db:seed
 	```
 
-3. Run web app:
+3. If you want to use the dashboard login locally, also provide GitHub OAuth credentials before booting Rails:
+
+	```bash
+	export GITHUB_CLIENT_ID=your_github_oauth_app_client_id
+	export GITHUB_CLIENT_SECRET=your_github_oauth_app_client_secret
+	```
+
+4. Run web app:
 
 	```bash
 	bin/rails server
 	```
 
-4. Run worker in another terminal:
+5. Run worker in another terminal:
 
 	```bash
 	bin/jobs start

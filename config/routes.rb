@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   get "login" => "sessions#new"
   delete "logout" => "sessions#destroy"
   match "auth/:provider/callback", to: "sessions#create", via: %i[get post]
+  match "auth/:provider", to: "sessions#provider", via: %i[get post]
   match "auth/failure", to: "sessions#failure", via: %i[get post]
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

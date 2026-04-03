@@ -32,6 +32,14 @@ class SessionsController < ApplicationController
     redirect_to login_path, alert: "GitHub authentication failed"
   end
 
+  def provider
+    provider = params[:provider].to_s
+    return redirect_to(login_path, alert: "Unsupported authentication provider") unless provider == "github"
+    return redirect_to(login_path, alert: "GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.") unless github_oauth_configured?
+
+    redirect_to login_path, alert: "GitHub authentication is configured but the OmniAuth middleware did not handle the request."
+  end
+
   def destroy
     reset_session
     redirect_to login_path, notice: "Signed out"
