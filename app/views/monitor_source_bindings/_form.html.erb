@@ -34,6 +34,7 @@
     <label class="field">
       <span>Heartbeat token</span>
       <%= form.select :heartbeat_token_id, heartbeat_tokens.map { |token| [token.description.presence || "Heartbeat ##{token.id}", token.id] }, { include_blank: "Auto-generate or keep current" }, {} %>
+      <small>Used only for heartbeat bindings. Leave blank to mint a dedicated token for this monitor. Heartbeat bindings require the monitor to belong to a service.</small>
     </label>
 
     <label class="field field--toggle">

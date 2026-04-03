@@ -41,11 +41,35 @@ class PulseMonitor < ApplicationRecord
     monitor_source_bindings.enabled.primary.order(:id).first
   end
 
+  def runnable_manually?
+    enabled? && internal_strategy?
+  end
+
   def authoritative_without_binding?(source:)
     binding = primary_binding
     return true if binding.blank?
 
     source.to_s == binding.kind
+  end
+
+  def activate!
+    attrs = {
+      enabled: true,
+      lease_token: nil,
+      lease_expires_at: nil
+    }
+    attrs[:next_run_at] = Time.current if internal_strategy? && next_run_at.blank?
+    update!(attrs)
+  end
+
+  def deactivate!
+    attrs = {
+      enabled: false,
+      lease_token: nil,
+      lease_expires_at: nil
+    }
+    attrs[:next_run_at] = nil if internal_strategy?
+    update!(attrs)
   end
 
   def acquire_lease!(ttl_seconds: 30)

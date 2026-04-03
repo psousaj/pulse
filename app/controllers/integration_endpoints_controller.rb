@@ -1,6 +1,6 @@
 class IntegrationEndpointsController < ApplicationController
   before_action :require_login
-  before_action :set_integration_endpoint, only: %i[show edit update destroy]
+  before_action :set_integration_endpoint, only: %i[show edit update destroy enable disable rotate_secret]
 
   def index
     @integration_endpoints = current_account.integration_endpoints.includes(:monitor_source_bindings).order(:provider, :name)
@@ -54,6 +54,22 @@ class IntegrationEndpointsController < ApplicationController
   def destroy
     @integration_endpoint.destroy!
     redirect_to integration_endpoints_path, notice: "Integration endpoint removed."
+  end
+
+  def enable
+    @integration_endpoint.update!(enabled: true)
+    redirect_back fallback_location: integration_endpoint_path(@integration_endpoint), notice: "Integration endpoint enabled."
+  end
+
+  def disable
+    @integration_endpoint.update!(enabled: false)
+    redirect_back fallback_location: integration_endpoint_path(@integration_endpoint), notice: "Integration endpoint disabled."
+  end
+
+  def rotate_secret
+    @integration_endpoint.rotate_secret!
+    flash[:generated_secret] = @integration_endpoint.plain_secret
+    redirect_to integration_endpoint_path(@integration_endpoint), notice: "Integration endpoint secret rotated."
   end
 
   private

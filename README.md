@@ -36,6 +36,7 @@ The project runs with 4 services:
 
 	```bash
 	bin/rails db:prepare
+	bin/rails pulse:prepare_runtime_schemas
 	bin/rails db:seed
 	```
 
@@ -97,3 +98,15 @@ The project runs with 4 services:
   ```bash
   bin/jobs start
   ```
+
+- Repair local runtime schemas if `bin/jobs start` complains about missing `solid_queue_*` tables:
+
+	```bash
+	bin/rails pulse:prepare_runtime_schemas
+	```
+
+- Override the SQLite connection pool if you customize worker thread counts:
+
+	```bash
+	SQLITE_MAX_CONNECTIONS=24 bin/jobs start
+	```

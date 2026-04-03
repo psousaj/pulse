@@ -1,6 +1,6 @@
 class MonitorsController < ApplicationController
   before_action :require_login
-  before_action :set_monitor, only: %i[show edit update destroy]
+  before_action :set_monitor, only: %i[show edit update destroy enable disable run_now]
   before_action :load_form_dependencies, only: %i[new create edit update]
 
   def index
@@ -57,6 +57,29 @@ class MonitorsController < ApplicationController
   def destroy
     @monitor.destroy!
     redirect_to monitors_path, notice: "Monitor removed."
+  end
+
+  def enable
+    @monitor.activate!
+    redirect_back fallback_location: monitor_path(@monitor), notice: "Monitor enabled."
+  end
+
+  def disable
+    @monitor.deactivate!
+    redirect_back fallback_location: monitor_path(@monitor), notice: "Monitor disabled."
+  end
+
+  def run_now
+    unless @monitor.internal_strategy?
+      return redirect_back fallback_location: monitor_path(@monitor), alert: "Only internal monitors can be run manually."
+    end
+
+    unless @monitor.enabled?
+      return redirect_back fallback_location: monitor_path(@monitor), alert: "Enable the monitor before queueing a run."
+    end
+
+    MonitorCheckExecutionJob.perform_later(@monitor.id, scheduled_at: Time.current)
+    redirect_back fallback_location: monitor_path(@monitor), notice: "Monitor run queued."
   end
 
   private

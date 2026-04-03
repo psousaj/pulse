@@ -19,9 +19,28 @@ Rails.application.routes.draw do
   get "status" => "public/status_pages#index"
 
   resources :monitors do
-    resources :monitor_source_bindings, path: :bindings, except: %i[index show]
+    member do
+      patch :enable
+      patch :disable
+      post :run_now
+    end
+
+    resources :monitor_source_bindings, path: :bindings, except: %i[index show] do
+      member do
+        patch :enable
+        patch :disable
+        post :rotate_token
+      end
+    end
   end
-  resources :integration_endpoints
+
+  resources :integration_endpoints do
+    member do
+      patch :enable
+      patch :disable
+      post :rotate_secret
+    end
+  end
 
   namespace :integrations do
     post "zabbix/events" => "zabbix_events#create"

@@ -27,6 +27,7 @@
               <th>Provider</th>
               <th>Status</th>
               <th>Bindings</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -36,6 +37,13 @@
                 <td><span class="pill"><%= endpoint.provider %></span></td>
                 <td><span class="status-pill status-pill--<%= endpoint.enabled? ? "up" : "down" %>"><%= endpoint.enabled? ? "enabled" : "disabled" %></span></td>
                 <td><%= endpoint.monitor_source_bindings.size %></td>
+                <td>
+                  <div class="inline-actions">
+                    <%= link_to "Open", integration_endpoint_path(endpoint), class: "button button--secondary button--small" %>
+                    <%= button_to(endpoint.enabled? ? "Disable" : "Enable", endpoint.enabled? ? disable_integration_endpoint_path(endpoint) : enable_integration_endpoint_path(endpoint), method: :patch, class: "button button--secondary button--small") %>
+                    <%= button_to "Rotate secret", rotate_secret_integration_endpoint_path(endpoint), method: :post, class: "button button--small" %>
+                  </div>
+                </td>
               </tr>
             <% end %>
           </tbody>

@@ -3,4 +3,6 @@
 require_relative "../config/environment"
 require "solid_queue/cli"
 
+Pulse::RuntimeSchemaPreparer.prepare!
+
 SolidQueue::Cli.start(ARGV)

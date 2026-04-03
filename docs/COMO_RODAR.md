@@ -105,7 +105,7 @@ Campos minimos para local:
 
 - `RAILS_MASTER_KEY`: pode usar `cat config/master.key`
 - `JWT_SECRET`: gere com `openssl rand -hex 32`
-- `RAILS_MAX_THREADS`: mantenha `20` para casar com o worker do Solid Queue
+- `SQLITE_MAX_CONNECTIONS`: opcional, so ajuste se quiser um pool diferente do padrao local `20`
 
 Observacao: agora o modo Ruby local carrega `.env` automaticamente no `bin/rails` e `bin/jobs`.
 
@@ -113,6 +113,7 @@ Observacao: agora o modo Ruby local carrega `.env` automaticamente no `bin/rails
 
 ```bash
 bin/rails db:prepare
+bin/rails pulse:prepare_runtime_schemas
 bin/rails db:seed
 ```
 
@@ -182,19 +183,23 @@ JWT_SECRET=gere_com_openssl_rand_-hex_32
 
 `Could not find table 'solid_queue_recurring_tasks'`
 
-- Criar as tabelas de fila no banco atual:
+- Preparar os schemas auxiliares do runtime no banco SQLite atual:
 
 ```bash
-bin/rails runner "load Rails.root.join('db/queue_schema.rb')"
+bin/rails pulse:prepare_runtime_schemas
 ```
+
+- Isso cria, se necessario, as tabelas do Solid Queue, Solid Cache e Solid Cable no banco unificado de desenvolvimento.
 
 `Solid Queue is configured to use 14 threads but the database connection pool is 5`
 
 - Defina no `.env`:
 
 ```bash
-RAILS_MAX_THREADS=20
+SQLITE_MAX_CONNECTIONS=20
 ```
+
+- O projeto agora usa `20` por padrao no SQLite local. So ajuste esse valor se voce aumentar ou reduzir os threads do worker.
 
 `libsodium not available`
 

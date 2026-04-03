@@ -24,9 +24,11 @@ class MonitorSourceBinding < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
 
   validates :kind, presence: true
+  validates :token_digest, uniqueness: true, allow_nil: true
   validate :single_primary_binding_per_monitor
   validate :integration_binding_requires_endpoint
   validate :heartbeat_binding_requires_token
+  validate :heartbeat_binding_requires_service_context
 
   before_validation :sync_account_id
   before_validation :assign_token_digest, if: :heartbeat?
@@ -37,6 +39,25 @@ class MonitorSourceBinding < ApplicationRecord
 
   def config
     config_json || {}
+  end
+
+  def heartbeat_token
+    return nil unless heartbeat?
+    return nil if account_id.blank? || token_digest.blank?
+
+    HeartbeatToken.find_by(account_id: account_id, token_digest: token_digest)
+  end
+
+  def heartbeat_token_id
+    heartbeat_token&.id
+  end
+
+  def activate!
+    update!(enabled: true)
+  end
+
+  def deactivate!
+    update!(enabled: false)
   end
 
   def external_status_map(raw_status)
@@ -90,5 +111,11 @@ class MonitorSourceBinding < ApplicationRecord
     return unless heartbeat?
 
     errors.add(:token_digest, "can't be blank") if token_digest.blank?
+  end
+
+  def heartbeat_binding_requires_service_context
+    return unless heartbeat?
+
+    errors.add(:monitor, "must belong to a service for heartbeat bindings") if monitor&.service.blank?
   end
 end

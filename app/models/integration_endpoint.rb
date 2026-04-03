@@ -27,6 +27,12 @@ class IntegrationEndpoint < ApplicationRecord
     config_json || {}
   end
 
+  def rotate_secret!
+    @plain_secret = SecureRandom.hex(24)
+    update!(secret_digest: self.class.digest(@plain_secret))
+    self
+  end
+
   private
 
   def assign_secret_digest

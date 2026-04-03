@@ -6,6 +6,8 @@
       <p class="lede"><%= @integration_endpoint.provider %> · <span class="status-pill status-pill--<%= @integration_endpoint.enabled? ? "up" : "down" %>"><%= @integration_endpoint.enabled? ? "enabled" : "disabled" %></span></p>
     </div>
     <div class="hero-actions">
+      <%= button_to(@integration_endpoint.enabled? ? "Disable" : "Enable", @integration_endpoint.enabled? ? disable_integration_endpoint_path(@integration_endpoint) : enable_integration_endpoint_path(@integration_endpoint), method: :patch, class: "button button--secondary") %>
+      <%= button_to "Rotate secret", rotate_secret_integration_endpoint_path(@integration_endpoint), method: :post, class: "button" %>
       <%= link_to "Edit endpoint", edit_integration_endpoint_path(@integration_endpoint), class: "button button--secondary" %>
       <%= button_to "Delete", integration_endpoint_path(@integration_endpoint), method: :delete, class: "button button--danger button--small", form: { data: { turbo_confirm: "Delete this integration endpoint?" } } %>
     </div>
@@ -19,6 +21,8 @@
           <h2>Attached monitors</h2>
         </div>
       </div>
+
+      <p class="subtle">Ingress path: <%= integrations_zabbix_events_path if @integration_endpoint.provider == "zabbix" %></p>
 
       <% if @bindings.any? %>
         <ul class="stack-list">

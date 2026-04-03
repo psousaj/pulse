@@ -21,6 +21,12 @@ class HeartbeatToken < ApplicationRecord
     update!(last_heartbeat_at: at, next_expected_at: at + expected_interval_seconds)
   end
 
+  def rotate_token!
+    @plain_token = SecureRandom.hex(24)
+    update!(token_digest: self.class.digest(@plain_token))
+    self
+  end
+
   private
 
   def assign_token_digest

@@ -29,6 +29,7 @@
               <th>Status</th>
               <th>Bindings</th>
               <th>24h SLA</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -44,6 +45,15 @@
                 <td><span class="status-pill status-pill--<%= monitor.current_status %>"><%= monitor.current_status %></span></td>
                 <td><%= monitor.monitor_source_bindings.size %></td>
                 <td><%= rollup ? number_to_percentage(rollup.uptime_pct, precision: 2) : "--" %></td>
+                <td>
+                  <div class="inline-actions">
+                    <%= link_to "Open", monitor_path(monitor), class: "button button--secondary button--small" %>
+                    <% if monitor.runnable_manually? %>
+                      <%= button_to "Run now", run_now_monitor_path(monitor), method: :post, class: "button button--small" %>
+                    <% end %>
+                    <%= button_to(monitor.enabled? ? "Disable" : "Enable", monitor.enabled? ? disable_monitor_path(monitor) : enable_monitor_path(monitor), method: :patch, class: "button button--secondary button--small") %>
+                  </div>
+                </td>
               </tr>
             <% end %>
           </tbody>

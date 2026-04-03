@@ -6,6 +6,10 @@
       <p class="lede"><%= @monitor.service&.name || "Ungrouped" %> · <%= @monitor.strategy %> · <span class="status-pill status-pill--<%= @monitor.current_status %>"><%= @monitor.current_status %></span></p>
     </div>
     <div class="hero-actions">
+      <% if @monitor.runnable_manually? %>
+        <%= button_to "Run now", run_now_monitor_path(@monitor), method: :post, class: "button" %>
+      <% end %>
+      <%= button_to(@monitor.enabled? ? "Disable" : "Enable", @monitor.enabled? ? disable_monitor_path(@monitor) : enable_monitor_path(@monitor), method: :patch, class: "button button--secondary") %>
       <%= link_to "Edit monitor", edit_monitor_path(@monitor), class: "button button--secondary" %>
       <%= link_to "Add binding", new_monitor_monitor_source_binding_path(@monitor), class: "button" %>
       <%= button_to "Delete", monitor_path(@monitor), method: :delete, class: "button button--danger button--small", form: { data: { turbo_confirm: "Delete this monitor?" } } %>
@@ -36,8 +40,15 @@
           <% @bindings.each do |binding| %>
             <li>
               <strong class="stack-title"><%= binding.kind %> · <%= binding.role %></strong>
-              <span class="subtle"><%= [binding.provider, binding.external_ref].compact.join(" · ").presence || "No external reference" %></span>
+              <span class="subtle"><%= [binding.enabled? ? "enabled" : "disabled", binding.provider, binding.external_ref].compact.join(" · ").presence || "No external reference" %></span>
+              <% if binding.heartbeat? %>
+                <span class="subtle">Heartbeat token <%= binding.heartbeat_token_id ? "##{binding.heartbeat_token_id}" : "will be minted on save" %></span>
+              <% end %>
               <div class="inline-actions inline-actions--compact">
+                <%= button_to(binding.enabled? ? "Disable" : "Enable", binding.enabled? ? disable_monitor_monitor_source_binding_path(@monitor, binding) : enable_monitor_monitor_source_binding_path(@monitor, binding), method: :patch, class: "button button--secondary button--small") %>
+                <% if binding.heartbeat? %>
+                  <%= button_to "Rotate token", rotate_token_monitor_monitor_source_binding_path(@monitor, binding), method: :post, class: "button button--small" %>
+                <% end %>
                 <%= link_to "Edit", edit_monitor_monitor_source_binding_path(@monitor, binding), class: "text-link" %>
                 <%= button_to "Delete", monitor_monitor_source_binding_path(@monitor, binding), method: :delete, class: "button-link", form: { data: { turbo_confirm: "Delete this binding?" } } %>
               </div>
