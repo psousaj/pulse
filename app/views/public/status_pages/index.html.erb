@@ -1,36 +1,72 @@
-<main class="status-page">
-  <h1>Service Status</h1>
+<main class="page-stack page-stack--public">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Public status</p>
+      <h1>Service Status</h1>
+      <p class="lede">Grouped services, with the monitor-level health and 24-hour uptime that now drive incident and SLA semantics.</p>
+    </div>
+  </section>
 
-  <section>
-    <h2>Services</h2>
+  <section class="card-grid">
     <% if @services.any? %>
-      <ul>
-        <% @services.each do |service| %>
-          <li>
-            <strong><%= service.name %></strong>
-            - <%= service.current_status %>
-          </li>
-        <% end %>
-      </ul>
+      <% @services.each do |service| %>
+        <article class="surface status-card">
+          <div class="panel-head panel-head--compact">
+            <div>
+              <h2><%= service.name %></h2>
+              <p class="subtle"><%= service.description.presence || "No service description" %></p>
+            </div>
+            <span class="status-pill status-pill--<%= service.current_status == "operational" ? "up" : service.current_status %>"><%= service.current_status %></span>
+          </div>
+
+          <% if service.monitors.any? %>
+            <ul class="monitor-list">
+              <% service.monitors.order(:name).each do |monitor| %>
+                <% rollup = @rollups_24h[monitor.id] %>
+                <li>
+                  <div>
+                    <strong><%= monitor.name %></strong>
+                    <span class="subtle"><%= monitor.strategy %></span>
+                  </div>
+                  <div class="monitor-list__meta">
+                    <span class="status-pill status-pill--<%= monitor.current_status %>"><%= monitor.current_status %></span>
+                    <span class="subtle"><%= rollup ? number_to_percentage(rollup.uptime_pct, precision: 2) : "--" %> · 24h uptime</span>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="empty-state">No public monitors attached to this service yet.</p>
+          <% end %>
+        </article>
+      <% end %>
     <% else %>
-      <p>No public services configured.</p>
+      <article class="surface panel">
+        <p class="empty-state">No public services configured.</p>
+      </article>
     <% end %>
   </section>
 
-  <section>
-    <h2>Recent incidents</h2>
+  <section class="surface panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Recent incidents</p>
+        <h2>Latest public-impacting incidents</h2>
+      </div>
+    </div>
+
     <% if @recent_incidents.any? %>
-      <ul>
+      <ul class="stack-list">
         <% @recent_incidents.each do |incident| %>
           <li>
-            <strong><%= incident.service.name %></strong>
-            - <%= incident.title %>
-            (<%= incident.state %>)
+            <span class="status-pill status-pill--<%= incident.severity %>"><%= incident.severity %></span>
+            <strong class="stack-title"><%= incident.service&.name || incident.monitor&.name || incident.title %></strong>
+            <span class="subtle"><%= incident.title %> · <%= incident.state %></span>
           </li>
         <% end %>
       </ul>
     <% else %>
-      <p>No recent incidents.</p>
+      <p class="empty-state">No recent incidents.</p>
     <% end %>
   </section>
 </main>

@@ -1,0 +1,48 @@
+<main class="page-stack">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Integrations</p>
+      <h1>Inbound endpoints</h1>
+      <p class="lede">Provider-facing entry points that authenticate incoming events, persist the raw ingress and feed the event-driven engine.</p>
+    </div>
+    <div class="hero-actions">
+      <%= link_to "New endpoint", new_integration_endpoint_path, class: "button" %>
+    </div>
+  </section>
+
+  <section class="surface panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Inventory</p>
+        <h2>Configured endpoints</h2>
+      </div>
+    </div>
+
+    <% if @integration_endpoints.any? %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Provider</th>
+              <th>Status</th>
+              <th>Bindings</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @integration_endpoints.each do |endpoint| %>
+              <tr>
+                <td><%= link_to endpoint.name, integration_endpoint_path(endpoint), class: "text-link" %></td>
+                <td><span class="pill"><%= endpoint.provider %></span></td>
+                <td><span class="status-pill status-pill--<%= endpoint.enabled? ? "up" : "down" %>"><%= endpoint.enabled? ? "enabled" : "disabled" %></span></td>
+                <td><%= endpoint.monitor_source_bindings.size %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="empty-state">No integration endpoints configured.</p>
+    <% end %>
+  </section>
+</main>

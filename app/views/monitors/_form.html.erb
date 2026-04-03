@@ -1,0 +1,55 @@
+<%= form_with model: monitor, class: "resource-form" do |form| %>
+  <% if monitor.errors.any? %>
+    <div class="form-errors">
+      <h2><%= pluralize(monitor.errors.count, "error") %> blocked this monitor</h2>
+      <ul>
+        <% monitor.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-grid">
+    <label class="field">
+      <span>Name</span>
+      <%= form.text_field :name, required: true %>
+    </label>
+
+    <label class="field">
+      <span>Slug</span>
+      <%= form.text_field :slug, required: true %>
+    </label>
+
+    <label class="field">
+      <span>Service</span>
+      <%= form.collection_select :service_id, services, :id, :name, { include_blank: "Ungrouped" }, {} %>
+    </label>
+
+    <label class="field">
+      <span>Strategy</span>
+      <%= form.select :strategy, PulseMonitor::STRATEGIES.map { |strategy| [strategy.humanize, strategy] } %>
+    </label>
+
+    <label class="field">
+      <span>Interval seconds</span>
+      <%= form.number_field :interval_seconds, min: 1, placeholder: "Leave blank for event-only" %>
+    </label>
+
+    <label class="field field--toggle">
+      <span>Enabled</span>
+      <%= form.check_box :enabled %>
+    </label>
+
+    <label class="field field--full">
+      <span>Config JSON</span>
+      <%= form.text_area :config_json_text, value: config_json_text, rows: 14, class: "code-area", spellcheck: false %>
+      <small>Keep thresholds, URLs and strategy-specific config here.</small>
+    </label>
+  </div>
+
+  <div class="inline-actions">
+    <%= form.submit monitor.persisted? ? "Save monitor" : "Create monitor", class: "button" %>
+    <%= link_to "Cancel", monitor.persisted? ? monitor_path(monitor) : monitors_path, class: "button button--secondary" %>
+  </div>
+<% end %>

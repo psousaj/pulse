@@ -24,6 +24,47 @@
   </head>
 
   <body>
-    <%= yield %>
+    <div class="app-shell">
+      <div class="app-shell__backdrop" aria-hidden="true"></div>
+
+      <% if logged_in? %>
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Pulse</p>
+            <p class="app-title">Synthetic operations cockpit</p>
+          </div>
+
+          <nav class="app-nav">
+            <%= link_to "Dashboard", root_path, class: "nav-link" %>
+            <%= link_to "Monitors", monitors_path, class: "nav-link" %>
+            <%= link_to "Integrations", integration_endpoints_path, class: "nav-link" %>
+            <%= link_to "Public status", status_path, class: "nav-link nav-link--ghost" %>
+            <%= button_to "Sign out", logout_path, method: :delete, class: "button button--secondary button--small" %>
+          </nav>
+        </header>
+      <% end %>
+
+      <div class="page-frame">
+        <% flash.each do |type, message| %>
+          <div class="flash flash--<%= type %>"><%= message %></div>
+        <% end %>
+
+        <% if flash[:generated_secret].present? %>
+          <div class="flash flash--secret">
+            <strong>New integration secret</strong>
+            <span><%= flash[:generated_secret] %></span>
+          </div>
+        <% end %>
+
+        <% if flash[:generated_token].present? %>
+          <div class="flash flash--secret">
+            <strong>Generated heartbeat token</strong>
+            <span><%= flash[:generated_token] %></span>
+          </div>
+        <% end %>
+
+        <%= yield %>
+      </div>
+    </div>
   </body>
 </html>

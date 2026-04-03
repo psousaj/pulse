@@ -1,0 +1,113 @@
+<main class="page-stack">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Monitor</p>
+      <h1><%= @monitor.name %></h1>
+      <p class="lede"><%= @monitor.service&.name || "Ungrouped" %> · <%= @monitor.strategy %> · <span class="status-pill status-pill--<%= @monitor.current_status %>"><%= @monitor.current_status %></span></p>
+    </div>
+    <div class="hero-actions">
+      <%= link_to "Edit monitor", edit_monitor_path(@monitor), class: "button button--secondary" %>
+      <%= link_to "Add binding", new_monitor_monitor_source_binding_path(@monitor), class: "button" %>
+      <%= button_to "Delete", monitor_path(@monitor), method: :delete, class: "button button--danger button--small", form: { data: { turbo_confirm: "Delete this monitor?" } } %>
+    </div>
+  </section>
+
+  <section class="stat-grid">
+    <% @rollups.each do |rollup| %>
+      <article class="stat-card surface">
+        <span class="stat-label"><%= rollup.window_key %> uptime</span>
+        <strong class="stat-value"><%= number_to_percentage(rollup.uptime_pct, precision: 2) %></strong>
+        <p class="stat-note"><%= rollup.down_seconds %>s down · <%= rollup.degraded_seconds %>s degraded</p>
+      </article>
+    <% end %>
+  </section>
+
+  <section class="content-grid">
+    <article class="surface panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Bindings</p>
+          <h2>Source authority</h2>
+        </div>
+      </div>
+
+      <% if @bindings.any? %>
+        <ul class="stack-list">
+          <% @bindings.each do |binding| %>
+            <li>
+              <strong class="stack-title"><%= binding.kind %> · <%= binding.role %></strong>
+              <span class="subtle"><%= [binding.provider, binding.external_ref].compact.join(" · ").presence || "No external reference" %></span>
+              <div class="inline-actions inline-actions--compact">
+                <%= link_to "Edit", edit_monitor_monitor_source_binding_path(@monitor, binding), class: "text-link" %>
+                <%= button_to "Delete", monitor_monitor_source_binding_path(@monitor, binding), method: :delete, class: "button-link", form: { data: { turbo_confirm: "Delete this binding?" } } %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No source bindings yet.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel panel--wide">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Recent events</p>
+          <h2>Health timeline</h2>
+        </div>
+      </div>
+
+      <% if @recent_events.any? %>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Checked at</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @recent_events.each do |event| %>
+                <tr>
+                  <td><%= l(event.checked_at, format: :short) %></td>
+                  <td><%= event.source %></td>
+                  <td><span class="status-pill status-pill--<%= event.status %>"><%= event.status %></span></td>
+                  <td><%= event.latency_ms ? "#{event.latency_ms}ms" : "--" %></td>
+                  <td><%= event.error_message.presence || "--" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="empty-state">No health events yet.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Incidents</p>
+          <h2>Lifecycle history</h2>
+        </div>
+      </div>
+
+      <% if @recent_incidents.any? %>
+        <ul class="stack-list">
+          <% @recent_incidents.each do |incident| %>
+            <li>
+              <span class="status-pill status-pill--<%= incident.severity %>"><%= incident.severity %></span>
+              <strong class="stack-title"><%= incident.title %></strong>
+              <span class="subtle"><%= incident.state %> · <%= l(incident.opened_at, format: :short) %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No incidents tied to this monitor.</p>
+      <% end %>
+    </article>
+  </section>
+</main>

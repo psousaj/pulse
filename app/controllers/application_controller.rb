@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
-  helper_method :current_user, :logged_in?
+  helper_method :current_user, :current_account, :logged_in?
 
   private
 
@@ -13,6 +13,10 @@ class ApplicationController < ActionController::Base
     return nil if session[:user_id].blank?
 
     @current_user ||= User.find_by(id: session[:user_id], active: true)
+  end
+
+  def current_account
+    current_user&.account
   end
 
   def logged_in?

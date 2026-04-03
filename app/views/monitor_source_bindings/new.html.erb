@@ -1,0 +1,12 @@
+<main class="page-stack page-stack--narrow">
+  <section class="surface panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Create</p>
+        <h1>New binding for <%= @monitor.name %></h1>
+      </div>
+    </div>
+
+    <%= render "form", monitor: @monitor, monitor_source_binding: @monitor_source_binding, integration_endpoints: @integration_endpoints, heartbeat_tokens: @heartbeat_tokens, config_json_text: @config_json_text %>
+  </section>
+</main>

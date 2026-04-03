@@ -18,6 +18,11 @@ Rails.application.routes.draw do
 
   get "status" => "public/status_pages#index"
 
+  resources :monitors do
+    resources :monitor_source_bindings, path: :bindings, except: %i[index show]
+  end
+  resources :integration_endpoints
+
   namespace :integrations do
     post "zabbix/events" => "zabbix_events#create"
   end
@@ -27,6 +32,8 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :services, only: [ :index, :show ]
+      resources :monitors, only: [ :index, :show ]
+      resources :monitor_sla_rollups, only: [ :index ]
       resources :incidents, only: [ :index, :show ]
     end
   end

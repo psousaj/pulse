@@ -1,0 +1,75 @@
+<main class="page-stack">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Endpoint</p>
+      <h1><%= @integration_endpoint.name %></h1>
+      <p class="lede"><%= @integration_endpoint.provider %> · <span class="status-pill status-pill--<%= @integration_endpoint.enabled? ? "up" : "down" %>"><%= @integration_endpoint.enabled? ? "enabled" : "disabled" %></span></p>
+    </div>
+    <div class="hero-actions">
+      <%= link_to "Edit endpoint", edit_integration_endpoint_path(@integration_endpoint), class: "button button--secondary" %>
+      <%= button_to "Delete", integration_endpoint_path(@integration_endpoint), method: :delete, class: "button button--danger button--small", form: { data: { turbo_confirm: "Delete this integration endpoint?" } } %>
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <article class="surface panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Bindings</p>
+          <h2>Attached monitors</h2>
+        </div>
+      </div>
+
+      <% if @bindings.any? %>
+        <ul class="stack-list">
+          <% @bindings.each do |binding| %>
+            <li>
+              <%= link_to binding.monitor.name, monitor_path(binding.monitor), class: "stack-title text-link" %>
+              <span class="subtle"><%= binding.kind %> · <%= binding.role %> · <%= binding.external_ref %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No monitor bindings attached to this endpoint.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel panel--wide">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Ingresses</p>
+          <h2>Recent inbound payloads</h2>
+        </div>
+      </div>
+
+      <% if @recent_ingresses.any? %>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Received</th>
+                <th>Status</th>
+                <th>External ref</th>
+                <th>Health event</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @recent_ingresses.each do |ingress| %>
+                <tr>
+                  <td><%= l(ingress.received_at, format: :short) %></td>
+                  <td><span class="pill"><%= ingress.status %></span></td>
+                  <td><%= ingress.external_ref.presence || "--" %></td>
+                  <td><%= ingress.health_event_id || "--" %></td>
+                  <td><%= ingress.error_code.presence || "--" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="empty-state">No inbound events captured yet.</p>
+      <% end %>
+    </article>
+  </section>
+</main>

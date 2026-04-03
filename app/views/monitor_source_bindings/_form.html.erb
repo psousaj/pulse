@@ -1,0 +1,55 @@
+<%= form_with model: [monitor, monitor_source_binding], class: "resource-form" do |form| %>
+  <% if monitor_source_binding.errors.any? %>
+    <div class="form-errors">
+      <h2><%= pluralize(monitor_source_binding.errors.count, "error") %> blocked this binding</h2>
+      <ul>
+        <% monitor_source_binding.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-grid">
+    <label class="field">
+      <span>Kind</span>
+      <%= form.select :kind, MonitorSourceBinding.kinds.keys.map { |kind| [kind.humanize, kind] } %>
+    </label>
+
+    <label class="field">
+      <span>Role</span>
+      <%= form.select :role, MonitorSourceBinding.roles.keys.map { |role| [role.humanize, role] } %>
+    </label>
+
+    <label class="field">
+      <span>Integration endpoint</span>
+      <%= form.collection_select :integration_endpoint_id, integration_endpoints, :id, :name, { include_blank: "None" }, {} %>
+    </label>
+
+    <label class="field">
+      <span>External reference</span>
+      <%= form.text_field :external_ref, placeholder: "e.g. cliente-api" %>
+    </label>
+
+    <label class="field">
+      <span>Heartbeat token</span>
+      <%= form.select :heartbeat_token_id, heartbeat_tokens.map { |token| [token.description.presence || "Heartbeat ##{token.id}", token.id] }, { include_blank: "Auto-generate or keep current" }, {} %>
+    </label>
+
+    <label class="field field--toggle">
+      <span>Enabled</span>
+      <%= form.check_box :enabled %>
+    </label>
+
+    <label class="field field--full">
+      <span>Config JSON</span>
+      <%= form.text_area :config_json_text, value: config_json_text, rows: 12, class: "code-area", spellcheck: false %>
+      <small>Use this for provider status maps or source-specific behavior.</small>
+    </label>
+  </div>
+
+  <div class="inline-actions">
+    <%= form.submit monitor_source_binding.persisted? ? "Save binding" : "Create binding", class: "button" %>
+    <%= link_to "Cancel", monitor_path(monitor), class: "button button--secondary" %>
+  </div>
+<% end %>

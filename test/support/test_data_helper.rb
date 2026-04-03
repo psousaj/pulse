@@ -31,6 +31,23 @@ module TestDataHelper
     end
   end
 
+  def github_auth_hash(uid: "github-#{SecureRandom.hex(4)}", email: "owner-#{SecureRandom.hex(4)}@example.com", name: "GitHub User", nickname: "pulse-user")
+    {
+      "provider" => "github",
+      "uid" => uid,
+      "info" => {
+        "email" => email,
+        "name" => name,
+        "nickname" => nickname
+      }
+    }
+  end
+
+  def issue_api_access_token(account:, user:, secret: "jwt-test-secret")
+    api_client = ApiClient.create!(account: account, name: "tests-client-#{SecureRandom.hex(3)}")
+    Api::TokenIssuer.new(secret: secret).issue!(user: user, api_client: api_client)[:access_token]
+  end
+
   def create_account(name: "Test Account", slug: "test-account-#{SecureRandom.hex(4)}")
     Account.create!(
       name: name,

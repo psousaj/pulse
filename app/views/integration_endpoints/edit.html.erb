@@ -1,0 +1,12 @@
+<main class="page-stack page-stack--narrow">
+  <section class="surface panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Edit</p>
+        <h1><%= @integration_endpoint.name %></h1>
+      </div>
+    </div>
+
+    <%= render "form", integration_endpoint: @integration_endpoint, config_json_text: @config_json_text %>
+  </section>
+</main>

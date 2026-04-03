@@ -7,6 +7,19 @@ module Api
         @account = create_account
         @user = create_user(account: @account)
         @service = create_service(account: @account, name: "API Service", slug: "api-service")
+        @monitor = create_monitor(account: @account, service: @service, name: "API Monitor", slug: "api-monitor")
+        MonitorSlaRollup.create!(
+          account: @account,
+          monitor: @monitor,
+          window_key: "24h",
+          uptime_pct: 99.75,
+          degraded_pct: 0.15,
+          down_pct: 0.10,
+          down_seconds: 86,
+          degraded_seconds: 130,
+          window_start: 24.hours.ago,
+          window_end: Time.current
+        )
       end
 
       test "returns unauthorized without bearer token" do
@@ -67,15 +80,29 @@ module Api
         end
 
         assert_response :success
-        service_names = response.parsed_body.fetch("services").map { |item| item["name"] }
-        assert_includes service_names, "API Service"
+        service = response.parsed_body.fetch("services").find { |item| item["name"] == "API Service" }
+
+        assert_equal 1, service["monitor_count"]
+        assert_equal 0, service["down_monitors"]
+      end
+
+      test "shows monitors in service detail payload" do
+        with_env("JWT_SECRET" => "jwt-test-secret") do
+          get "/api/v1/services/#{@service.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        end
+
+        assert_response :success
+        monitor = response.parsed_body.fetch("service").fetch("monitors").first
+
+        assert_equal "API Monitor", monitor["name"]
+        assert_equal "http_polling", monitor["strategy"]
+        assert_equal "24h", monitor.fetch("sla_rollups").first["window_key"]
       end
 
       private
 
       def issue_access_token
-        api_client = ApiClient.create!(account: @account, name: "tests-client")
-        Api::TokenIssuer.new(secret: "jwt-test-secret").issue!(user: @user, api_client: api_client)[:access_token]
+        issue_api_access_token(account: @account, user: @user)
       end
     end
   end

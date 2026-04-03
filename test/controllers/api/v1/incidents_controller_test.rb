@@ -7,7 +7,7 @@ module Api
         @account = create_account
         @user = create_user(account: @account)
         @service = create_service(account: @account, name: "API Service", slug: "api-service")
-        @service_check = create_service_check(service: @service)
+        @monitor = create_monitor(account: @account, service: @service, name: "API Monitor", slug: "api-monitor")
       end
 
       test "returns unauthorized without bearer token" do
@@ -18,13 +18,13 @@ module Api
       end
 
       test "returns incidents from current account only" do
-        incident_a = create_incident(account: @account, service: @service, service_check: @service_check, title: "Incident A")
-        create_incident(account: @account, service: @service, service_check: @service_check, title: "Incident B")
+        incident_a = create_incident(account: @account, service: @service, monitor: @monitor, title: "Incident A")
+        create_incident(account: @account, service: @service, monitor: @monitor, title: "Incident B")
 
         other_account = create_account
         other_service = create_service(account: other_account)
-        other_check = create_service_check(service: other_service)
-        create_incident(account: other_account, service: other_service, service_check: other_check, title: "External Incident")
+        other_monitor = create_monitor(account: other_account, service: other_service)
+        create_incident(account: other_account, service: other_service, monitor: other_monitor, title: "External Incident")
 
         with_env("JWT_SECRET" => "jwt-test-secret") do
           get "/api/v1/incidents", headers: { "Authorization" => "Bearer #{issue_access_token}" }
@@ -41,7 +41,7 @@ module Api
       end
 
       test "shows incident payload for current account" do
-        incident = create_incident(account: @account, service: @service, service_check: @service_check, title: "Incident detail")
+        incident = create_incident(account: @account, service: @service, monitor: @monitor, title: "Incident detail")
 
         with_env("JWT_SECRET" => "jwt-test-secret") do
           get "/api/v1/incidents/#{incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
@@ -52,16 +52,18 @@ module Api
         assert_equal incident.id, payload["id"]
         assert_equal "Incident detail", payload["title"]
         assert_equal "open", payload["state"]
+        assert_equal @monitor.id, payload["monitor_id"]
+        assert_equal "API Monitor", payload["monitor_name"]
       end
 
       test "returns not found when incident belongs to another account" do
         other_account = create_account
         other_service = create_service(account: other_account)
-        other_check = create_service_check(service: other_service)
+        other_monitor = create_monitor(account: other_account, service: other_service)
         external_incident = create_incident(
           account: other_account,
           service: other_service,
-          service_check: other_check,
+          monitor: other_monitor,
           title: "External Incident"
         )
 
@@ -74,11 +76,11 @@ module Api
 
       private
 
-      def create_incident(account:, service:, service_check:, title:)
+      def create_incident(account:, service:, monitor:, title:)
         Incident.create!(
           account: account,
           service: service,
-          service_check: service_check,
+          monitor: monitor,
           state: "open",
           severity: "down",
           title: title,
@@ -88,8 +90,7 @@ module Api
       end
 
       def issue_access_token
-        api_client = ApiClient.create!(account: @account, name: "tests-client")
-        Api::TokenIssuer.new(secret: "jwt-test-secret").issue!(user: @user, api_client: api_client)[:access_token]
+        issue_api_access_token(account: @account, user: @user)
       end
     end
   end

@@ -1,31 +1,130 @@
-<main class="dashboard">
-  <h1>Pulse Monitor</h1>
+<main class="page-stack">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1>Pulse Monitor</h1>
+      <p class="lede">Monitors and incident timelines are now the primary operational surface. Services stay as grouping, but the control plane is monitor-first.</p>
+    </div>
 
-  <section>
-    <h2>Overview</h2>
-    <ul>
-      <li>Total services: <%= @total_services %></li>
-      <li>Operational: <%= @operational_services %></li>
-      <li>Degraded: <%= @degraded_services %></li>
-      <li>Down: <%= @down_services %></li>
-    </ul>
+    <div class="hero-actions">
+      <%= link_to "New monitor", new_monitor_path, class: "button" %>
+      <%= link_to "New integration", new_integration_endpoint_path, class: "button button--secondary" %>
+    </div>
   </section>
 
-  <section>
-    <h2>Recent incidents</h2>
-    <% if @recent_incidents.any? %>
-      <ul>
-        <% @recent_incidents.each do |incident| %>
-          <li>
-            <strong><%= incident.service.name %></strong>
-            <%= incident.severity %>
-            (<%= incident.state %>)
-            - <%= incident.opened_at %>
-          </li>
-        <% end %>
-      </ul>
-    <% else %>
-      <p>No incidents yet.</p>
-    <% end %>
+  <section class="stat-grid">
+    <article class="stat-card surface">
+      <span class="stat-label">Services</span>
+      <strong class="stat-value"><%= @total_services %></strong>
+      <p class="stat-note">customer-facing groups</p>
+    </article>
+    <article class="stat-card surface">
+      <span class="stat-label">Monitors</span>
+      <strong class="stat-value"><%= @total_monitors %></strong>
+      <p class="stat-note">synthetic and event-driven assets</p>
+    </article>
+    <article class="stat-card surface">
+      <span class="stat-label">Healthy</span>
+      <strong class="stat-value stat-value--up"><%= @up_monitors %></strong>
+      <p class="stat-note">primary monitors reporting UP</p>
+    </article>
+    <article class="stat-card surface">
+      <span class="stat-label">Degraded / Down</span>
+      <strong class="stat-value stat-value--down"><%= @degraded_monitors + @down_monitors %></strong>
+      <p class="stat-note"><%= @degraded_monitors %> degraded, <%= @down_monitors %> down</p>
+    </article>
+  </section>
+
+  <section class="content-grid">
+    <article class="surface panel panel--wide">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Monitors</p>
+          <h2>Primary operational assets</h2>
+        </div>
+        <%= link_to "Manage", monitors_path, class: "button button--secondary button--small" %>
+      </div>
+
+      <% if @monitors.any? %>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Monitor</th>
+                <th>Service</th>
+                <th>Strategy</th>
+                <th>Status</th>
+                <th>24h SLA</th>
+                <th>Bindings</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @monitors.each do |monitor| %>
+                <% rollup = @rollups_24h[monitor.id] %>
+                <tr>
+                  <td>
+                    <%= link_to monitor.name, monitor_path(monitor), class: "text-link" %>
+                    <span class="subtle"><%= monitor.slug %></span>
+                  </td>
+                  <td><%= monitor.service&.name || "Ungrouped" %></td>
+                  <td><span class="pill"><%= monitor.strategy %></span></td>
+                  <td><span class="status-pill status-pill--<%= monitor.current_status %>"><%= monitor.current_status %></span></td>
+                  <td><%= rollup ? number_to_percentage(rollup.uptime_pct, precision: 2) : "--" %></td>
+                  <td><%= monitor.monitor_source_bindings.size %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="empty-state">No monitors yet. Create the first synthetic or integration-driven asset to start building the new runtime.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Integrations</p>
+          <h2>Inbound endpoints</h2>
+        </div>
+        <%= link_to "Manage", integration_endpoints_path, class: "button button--secondary button--small" %>
+      </div>
+
+      <% if @integration_endpoints.any? %>
+        <ul class="stack-list">
+          <% @integration_endpoints.each do |endpoint| %>
+            <li>
+              <%= link_to endpoint.name, integration_endpoint_path(endpoint), class: "stack-title" %>
+              <span class="subtle"><%= endpoint.provider %> · <%= endpoint.monitor_source_bindings.size %> bindings</span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No integration endpoints configured.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Incidents</p>
+          <h2>Recent lifecycle events</h2>
+        </div>
+      </div>
+
+      <% if @recent_incidents.any? %>
+        <ul class="stack-list">
+          <% @recent_incidents.each do |incident| %>
+            <li>
+              <span class="status-pill status-pill--<%= incident.severity %>"><%= incident.severity %></span>
+              <strong class="stack-title"><%= incident.monitor&.name || incident.service&.name || incident.title %></strong>
+              <span class="subtle"><%= incident.state %> · <%= l(incident.opened_at, format: :short) %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No incidents recorded yet.</p>
+      <% end %>
+    </article>
   </section>
 </main>

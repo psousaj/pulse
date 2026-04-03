@@ -1,0 +1,56 @@
+<main class="page-stack">
+  <section class="hero-card surface">
+    <div>
+      <p class="eyebrow">Monitors</p>
+      <h1>Monitor inventory</h1>
+      <p class="lede">Every internal strategy and external source now lands here first. This is the canonical surface for health, incident authority and SLA.</p>
+    </div>
+    <div class="hero-actions">
+      <%= link_to "New monitor", new_monitor_path, class: "button" %>
+    </div>
+  </section>
+
+  <section class="surface panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Inventory</p>
+        <h2>All monitors</h2>
+      </div>
+    </div>
+
+    <% if @monitors.any? %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Service</th>
+              <th>Strategy</th>
+              <th>Status</th>
+              <th>Bindings</th>
+              <th>24h SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @monitors.each do |monitor| %>
+              <% rollup = @rollups_24h[monitor.id] %>
+              <tr>
+                <td>
+                  <%= link_to monitor.name, monitor_path(monitor), class: "text-link" %>
+                  <span class="subtle"><%= monitor.slug %></span>
+                </td>
+                <td><%= monitor.service&.name || "Ungrouped" %></td>
+                <td><span class="pill"><%= monitor.strategy %></span></td>
+                <td><span class="status-pill status-pill--<%= monitor.current_status %>"><%= monitor.current_status %></span></td>
+                <td><%= monitor.monitor_source_bindings.size %></td>
+                <td><%= rollup ? number_to_percentage(rollup.uptime_pct, precision: 2) : "--" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="empty-state">No monitors configured yet.</p>
+    <% end %>
+  </section>
+</main>
