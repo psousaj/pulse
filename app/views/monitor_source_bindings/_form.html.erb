@@ -1,4 +1,4 @@
-<%= form_with model: [monitor, monitor_source_binding], class: "resource-form" do |form| %>
+<%= form_with model: monitor_source_binding, scope: :monitor_source_binding, url: monitor_source_binding.persisted? ? monitor_monitor_source_binding_path(monitor, monitor_source_binding) : monitor_monitor_source_bindings_path(monitor), method: monitor_source_binding.persisted? ? :patch : :post, class: "resource-form" do |form| %>
   <% if monitor_source_binding.errors.any? %>
     <div class="form-errors">
       <h2><%= pluralize(monitor_source_binding.errors.count, "error") %> blocked this binding</h2>

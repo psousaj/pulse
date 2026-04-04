@@ -1,18 +1,44 @@
-<main class="page-stack">
-  <section class="hero-card surface">
-    <div>
-      <p class="eyebrow">Overview</p>
-      <h1>Pulse Monitor</h1>
-      <p class="lede">Monitors and incident timelines are now the primary operational surface. Services stay as grouping, but the control plane is monitor-first.</p>
+<main class="page-stack dashboard-page">
+  <section class="surface panel panel--contrast dashboard-hero">
+    <div class="dashboard-hero__copy">
+      <p class="eyebrow">Command center</p>
+      <h1>See health, SLA drift and intake pressure without hunting through tables.</h1>
+      <p class="lede lede--inverse">This surface should read like an ops room: crisp state changes, clear hierarchy, strong contrast and enough visual structure that your eye lands on what needs attention first.</p>
+
+      <div class="hero-actions">
+        <%= link_to "New monitor", new_monitor_path, class: "button" %>
+        <%= link_to "New integration", new_integration_endpoint_path, class: "button button--secondary" %>
+      </div>
     </div>
 
-    <div class="hero-actions">
-      <%= link_to "New monitor", new_monitor_path, class: "button" %>
-      <%= link_to "New integration", new_integration_endpoint_path, class: "button button--secondary" %>
+    <div class="dashboard-hero__board">
+      <article class="dashboard-mini-card">
+        <span class="stat-label">Active incidents</span>
+        <strong class="stat-value stat-value--down"><%= @active_incidents_count %></strong>
+        <p class="stat-note">open or acknowledged right now</p>
+      </article>
+
+      <article class="dashboard-mini-card">
+        <span class="stat-label">Resolved today</span>
+        <strong class="stat-value"><%= @resolved_incidents_today %></strong>
+        <p class="stat-note">closures since midnight</p>
+      </article>
+
+      <article class="dashboard-mini-card">
+        <span class="stat-label">Ingress 24h</span>
+        <strong class="stat-value"><%= @integration_ingresses_24h %></strong>
+        <p class="stat-note">external events normalized</p>
+      </article>
+
+      <article class="dashboard-mini-card">
+        <span class="stat-label">Events 1h</span>
+        <strong class="stat-value"><%= @health_events_last_hour %></strong>
+        <p class="stat-note">health transitions in the last hour</p>
+      </article>
     </div>
   </section>
 
-  <section class="stat-grid">
+  <section class="stat-grid stat-grid--dashboard">
     <article class="stat-card surface">
       <span class="stat-label">Services</span>
       <strong class="stat-value"><%= @total_services %></strong>
@@ -26,62 +52,149 @@
     <article class="stat-card surface">
       <span class="stat-label">Healthy</span>
       <strong class="stat-value stat-value--up"><%= @up_monitors %></strong>
-      <p class="stat-note">primary monitors reporting UP</p>
+      <p class="stat-note"><%= number_to_percentage(dashboard_share(@up_monitors, @total_monitors), precision: 0) %> of the fleet is healthy</p>
     </article>
     <article class="stat-card surface">
-      <span class="stat-label">Degraded / Down</span>
+      <span class="stat-label">At risk</span>
       <strong class="stat-value stat-value--down"><%= @degraded_monitors + @down_monitors %></strong>
       <p class="stat-note"><%= @degraded_monitors %> degraded, <%= @down_monitors %> down</p>
     </article>
   </section>
 
-  <section class="content-grid">
-    <article class="surface panel panel--wide">
+  <section class="dashboard-grid">
+    <article class="surface panel panel--wide dashboard-panel">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">Monitors</p>
-          <h2>Primary operational assets</h2>
+          <p class="eyebrow">Fleet health</p>
+          <h2>Monitor status distribution and service SLA signal</h2>
         </div>
-        <%= link_to "Manage", monitors_path, class: "button button--secondary button--small" %>
+        <span class="pill">24h view</span>
       </div>
 
-      <% if @monitors.any? %>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Monitor</th>
-                <th>Service</th>
-                <th>Strategy</th>
-                <th>Status</th>
-                <th>24h SLA</th>
-                <th>Bindings</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @monitors.each do |monitor| %>
-                <% rollup = @rollups_24h[monitor.id] %>
-                <tr>
-                  <td>
-                    <%= link_to monitor.name, monitor_path(monitor), class: "text-link" %>
-                    <span class="subtle"><%= monitor.slug %></span>
-                  </td>
-                  <td><%= monitor.service&.name || "Ungrouped" %></td>
-                  <td><span class="pill"><%= monitor.strategy %></span></td>
-                  <td><span class="status-pill status-pill--<%= monitor.current_status %>"><%= monitor.current_status %></span></td>
-                  <td><%= rollup ? number_to_percentage(rollup.uptime_pct, precision: 2) : "--" %></td>
-                  <td><%= monitor.monitor_source_bindings.size %></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
+      <div class="status-meter">
+        <div class="status-meter__track">
+          <span class="status-meter__segment status-meter__segment--up" style="width: <%= dashboard_share(@up_monitors, @total_monitors) %>%"></span>
+          <span class="status-meter__segment status-meter__segment--degraded" style="width: <%= dashboard_share(@degraded_monitors, @total_monitors) %>%"></span>
+          <span class="status-meter__segment status-meter__segment--down" style="width: <%= dashboard_share(@down_monitors, @total_monitors) %>%"></span>
+        </div>
+
+        <div class="metric-cluster">
+          <div>
+            <strong><%= @up_monitors %></strong>
+            <span class="subtle">healthy monitors</span>
+          </div>
+          <div>
+            <strong><%= @degraded_monitors %></strong>
+            <span class="subtle">degraded monitors</span>
+          </div>
+          <div>
+            <strong><%= @down_monitors %></strong>
+            <span class="subtle">down monitors</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sparkline-card">
+        <div>
+          <p class="eyebrow">Service SLA contour</p>
+          <h3>Average 24h uptime by service</h3>
+          <p class="subtle">A quick read of whether groups are flat, slipping or clearly diverging.</p>
+        </div>
+
+        <svg viewBox="0 0 320 88" preserveAspectRatio="none" class="sparkline" role="img" aria-label="Average 24 hour uptime by service">
+          <polygon points="<%= sparkline_area_points(@uptime_series) %>" class="sparkline__area"></polygon>
+          <polyline points="<%= sparkline_points(@uptime_series) %>" class="sparkline__line"></polyline>
+        </svg>
+      </div>
+    </article>
+
+    <article class="surface panel dashboard-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Strategy mix</p>
+          <h2>Where health signals come from</h2>
+        </div>
+      </div>
+
+      <% if @strategy_mix.any? %>
+        <div class="bar-list">
+          <% @strategy_mix.each do |strategy, count| %>
+            <div class="bar-list__row">
+              <div class="bar-list__meta">
+                <strong><%= strategy.humanize %></strong>
+                <span class="subtle"><%= count %> monitors</span>
+              </div>
+              <div class="bar-list__track">
+                <span class="bar-list__fill" style="width: <%= dashboard_share(count, @total_monitors) %>%"></span>
+              </div>
+              <span class="bar-list__value"><%= number_to_percentage(dashboard_share(count, @total_monitors), precision: 0) %></span>
+            </div>
+          <% end %>
         </div>
       <% else %>
-        <p class="empty-state">No monitors yet. Create the first synthetic or integration-driven asset to start building the new runtime.</p>
+        <p class="empty-state">No monitor strategies configured yet.</p>
       <% end %>
     </article>
 
-    <article class="surface panel">
+    <article class="surface panel dashboard-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Incident pressure</p>
+          <h2>What needs attention now</h2>
+        </div>
+      </div>
+
+      <% if @active_incidents.any? %>
+        <ul class="stack-list stack-list--dense">
+          <% @active_incidents.each do |incident| %>
+            <li>
+              <span class="status-pill status-pill--<%= incident.severity %>"><%= incident.severity %></span>
+              <strong class="stack-title"><%= incident.monitor&.name || incident.service&.name || incident.title %></strong>
+              <span class="subtle"><%= incident.state %> · opened <%= time_ago_in_words(incident.opened_at) %> ago</span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="empty-state">No active incidents right now.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel panel--wide dashboard-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Service board</p>
+          <h2>Grouped uptime and monitor coverage</h2>
+        </div>
+        <span class="pill"><%= @service_rows.size %> rows</span>
+      </div>
+
+      <% if @service_rows.any? %>
+        <div class="service-board">
+          <% @service_rows.each do |row| %>
+            <div class="service-row">
+              <div>
+                <strong><%= row[:service].name %></strong>
+                <span class="subtle"><%= row[:monitors].size %> monitors · <%= row[:down_count] %> down · <%= row[:degraded_count] %> degraded</span>
+              </div>
+
+              <div class="service-row__status">
+                <span class="status-pill status-pill--<%= dashboard_status_tone(row[:service].current_status) %>"><%= row[:service].current_status %></span>
+              </div>
+
+              <div class="progress-track">
+                <span class="progress-fill progress-fill--<%= dashboard_status_tone(row[:service].current_status) %>" style="width: <%= row[:uptime_pct] || 0 %>%"></span>
+              </div>
+
+              <div class="service-row__metric"><%= row[:uptime_pct] ? number_to_percentage(row[:uptime_pct], precision: 2) : "--" %></div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="empty-state">No services available yet.</p>
+      <% end %>
+    </article>
+
+    <article class="surface panel dashboard-panel">
       <div class="panel-head">
         <div>
           <p class="eyebrow">Integrations</p>
@@ -91,39 +204,16 @@
       </div>
 
       <% if @integration_endpoints.any? %>
-        <ul class="stack-list">
+        <ul class="stack-list stack-list--dense">
           <% @integration_endpoints.each do |endpoint| %>
             <li>
-              <%= link_to endpoint.name, integration_endpoint_path(endpoint), class: "stack-title" %>
+              <%= link_to endpoint.name, integration_endpoint_path(endpoint), class: "stack-title text-link" %>
               <span class="subtle"><%= endpoint.provider %> · <%= endpoint.monitor_source_bindings.size %> bindings</span>
             </li>
           <% end %>
         </ul>
       <% else %>
         <p class="empty-state">No integration endpoints configured.</p>
-      <% end %>
-    </article>
-
-    <article class="surface panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">Incidents</p>
-          <h2>Recent lifecycle events</h2>
-        </div>
-      </div>
-
-      <% if @recent_incidents.any? %>
-        <ul class="stack-list">
-          <% @recent_incidents.each do |incident| %>
-            <li>
-              <span class="status-pill status-pill--<%= incident.severity %>"><%= incident.severity %></span>
-              <strong class="stack-title"><%= incident.monitor&.name || incident.service&.name || incident.title %></strong>
-              <span class="subtle"><%= incident.state %> · <%= l(incident.opened_at, format: :short) %></span>
-            </li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="empty-state">No incidents recorded yet.</p>
       <% end %>
     </article>
   </section>

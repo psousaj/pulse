@@ -24,46 +24,79 @@
   </head>
 
   <body>
-    <div class="app-shell">
+    <div class="app-shell <%= "app-shell--signed-in" if logged_in? %>">
       <div class="app-shell__backdrop" aria-hidden="true"></div>
 
       <% if logged_in? %>
-        <header class="app-header">
-          <div>
+        <aside class="app-sidebar">
+          <div class="app-brand">
             <p class="eyebrow">Pulse</p>
-            <p class="app-title">Synthetic operations cockpit</p>
+            <p class="app-title">Ops Control Room</p>
+            <p class="sidebar-copy">Synthetic health, event intake and SLA posture in one surface that reads like an operational desk.</p>
           </div>
 
-          <nav class="app-nav">
-            <%= link_to "Dashboard", root_path, class: "nav-link" %>
-            <%= link_to "Monitors", monitors_path, class: "nav-link" %>
-            <%= link_to "Integrations", integration_endpoints_path, class: "nav-link" %>
-            <%= link_to "Public status", status_path, class: "nav-link nav-link--ghost" %>
-            <%= button_to "Sign out", logout_path, method: :delete, class: "button button--secondary button--small" %>
+          <nav class="app-nav app-nav--stack">
+            <%= sidebar_nav_link_to "Dashboard", root_path, active: current_page?(root_path) %>
+            <%= sidebar_nav_link_to "Monitors", monitors_path, active: request.path.start_with?(monitors_path) %>
+            <%= sidebar_nav_link_to "Integrations", integration_endpoints_path, active: request.path.start_with?(integration_endpoints_path) %>
+            <%= sidebar_nav_link_to "Public Status", status_path, active: current_page?(status_path) %>
           </nav>
-        </header>
+
+          <div class="sidebar-note">
+            <p class="eyebrow">Workspace</p>
+            <strong><%= current_account&.name || "Pulse" %></strong>
+            <p><%= current_account&.slug || "workspace" %> is running in monitor-first mode.</p>
+          </div>
+
+          <div class="app-sidebar__footer">
+            <div class="topbar-chip topbar-chip--sidebar">
+              <span class="topbar-chip__dot"></span>
+              live surface
+            </div>
+            <%= button_to "Sign out", logout_path, method: :delete, class: "button button--secondary button--small" %>
+          </div>
+        </aside>
       <% end %>
 
-      <div class="page-frame">
-        <% flash.each do |type, message| %>
-          <div class="flash flash--<%= type %>"><%= message %></div>
+      <div class="app-stage <%= "app-stage--public" unless logged_in? %>">
+        <% if logged_in? %>
+          <header class="app-topbar">
+            <div>
+              <p class="eyebrow">Operations Desk</p>
+              <p class="app-topbar__title"><%= current_account&.slug || "workspace" %></p>
+            </div>
+
+            <div class="app-topbar__meta">
+              <div class="topbar-chip">
+                <span class="topbar-chip__dot"></span>
+                live state
+              </div>
+              <div class="topbar-date"><%= l(Time.zone.now, format: :short) %></div>
+            </div>
+          </header>
         <% end %>
 
-        <% if flash[:generated_secret].present? %>
-          <div class="flash flash--secret">
-            <strong>New integration secret</strong>
-            <span><%= flash[:generated_secret] %></span>
-          </div>
-        <% end %>
+        <div class="page-frame">
+          <% flash.each do |type, message| %>
+            <div class="flash flash--<%= type %>"><%= message %></div>
+          <% end %>
 
-        <% if flash[:generated_token].present? %>
-          <div class="flash flash--secret">
-            <strong>Generated heartbeat token</strong>
-            <span><%= flash[:generated_token] %></span>
-          </div>
-        <% end %>
+          <% if flash[:generated_secret].present? %>
+            <div class="flash flash--secret">
+              <strong>New integration secret</strong>
+              <span><%= flash[:generated_secret] %></span>
+            </div>
+          <% end %>
 
-        <%= yield %>
+          <% if flash[:generated_token].present? %>
+            <div class="flash flash--secret">
+              <strong>Generated heartbeat token</strong>
+              <span><%= flash[:generated_token] %></span>
+            </div>
+          <% end %>
+
+          <%= yield %>
+        </div>
       </div>
     </div>
   </body>

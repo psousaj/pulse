@@ -1,4 +1,4 @@
-<%= form_with model: monitor, class: "resource-form" do |form| %>
+<%= form_with model: monitor, scope: :monitor, url: monitor.persisted? ? monitor_path(monitor) : monitors_path, method: monitor.persisted? ? :patch : :post, class: "resource-form" do |form| %>
   <% if monitor.errors.any? %>
     <div class="form-errors">
       <h2><%= pluralize(monitor.errors.count, "error") %> blocked this monitor</h2>

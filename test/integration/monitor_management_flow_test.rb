@@ -26,8 +26,12 @@ class MonitorManagementFlowTest < ActionDispatch::IntegrationTest
     get "/"
 
     assert_response :success
-    assert_match "Primary operational assets", response.body
-    assert_match "Payments API", response.body
+    assert_match "See health, SLA drift and intake pressure", response.body
+    assert_match "Payments", response.body
+
+    get "/monitors/new"
+    assert_response :success
+    assert_match "New monitor", response.body
 
     post "/monitors", params: {
       monitor: {
@@ -43,6 +47,10 @@ class MonitorManagementFlowTest < ActionDispatch::IntegrationTest
 
     created_monitor = @account.monitors.find_by!(slug: "checkout-latency")
     assert_redirected_to monitor_path(created_monitor)
+
+    get "/monitors/#{created_monitor.id}/bindings/new"
+    assert_response :success
+    assert_match "New binding for Checkout latency", response.body
 
     post "/integration_endpoints", params: {
       integration_endpoint: {
@@ -146,11 +154,21 @@ class MonitorManagementFlowTest < ActionDispatch::IntegrationTest
 
   def sign_in
     account = @account
+    auth_hash = OmniAuth::AuthHash.new(github_auth_hash(email: "owner@example.com", name: "Owner"))
 
     with_temporary_class_method(Account, :first_or_create!, ->(*, **) { account }) do
-      post "/auth/github/callback", env: { "omniauth.auth" => github_auth_hash(email: "owner@example.com", name: "Owner") }
+      if ENV["GITHUB_CLIENT_ID"].present? && ENV["GITHUB_CLIENT_SECRET"].present?
+        OmniAuth.config.test_mode = true
+        OmniAuth.config.mock_auth[:github] = auth_hash
+        get "/auth/github/callback"
+      else
+        post "/auth/github/callback", env: { "omniauth.auth" => auth_hash }
+      end
     end
 
     assert_redirected_to "/"
+  ensure
+    OmniAuth.config.test_mode = false if defined?(OmniAuth)
+    OmniAuth.config.mock_auth[:github] = nil if defined?(OmniAuth)
   end
 end
