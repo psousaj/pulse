@@ -11,7 +11,6 @@ unless ENV.fetch("RAILS_ENV", ENV.fetch("RACK_ENV", "development")) == "producti
 
     # Keep local defaults safe when .env is copied from .env.example unchanged.
     ENV.delete("RAILS_MASTER_KEY") if ENV["RAILS_MASTER_KEY"] == "replace_me"
-    ENV.delete("JWT_SECRET") if ENV["JWT_SECRET"] == "replace_with_long_random_secret"
   rescue LoadError
     # Dotenv is optional outside development and test.
   end

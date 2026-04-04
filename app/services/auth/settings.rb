@@ -53,7 +53,7 @@ module Auth
     end
 
     def web_scopes
-      ENV.fetch("KEYCLOAK_WEB_SCOPES", "openid profile email offline_access").to_s
+      ENV.fetch("KEYCLOAK_WEB_SCOPES", "openid profile email").to_s
     end
 
     def redirect_uri

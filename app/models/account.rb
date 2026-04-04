@@ -12,7 +12,6 @@ class Account < ApplicationRecord
   has_many :integration_event_ingresses, dependent: :delete_all
   has_many :monitor_sla_rollups, dependent: :delete_all
   has_many :notification_channels, dependent: :destroy
-  has_many :api_clients, dependent: :delete_all
   has_many :settings, dependent: :destroy
   has_many :audit_logs, dependent: :delete_all
 

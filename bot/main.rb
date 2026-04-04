@@ -54,9 +54,8 @@ class KeycloakClientCredentialsProvider
 end
 
 class BotApiClient
-  def initialize(base_url:, token: nil, token_provider: nil)
+  def initialize(base_url:, token_provider: nil)
     @base_url = base_url
-    @token = token
     @token_provider = token_provider
   end
 
@@ -70,7 +69,7 @@ class BotApiClient
 
   private
 
-  attr_reader :base_url, :token, :token_provider
+  attr_reader :base_url, :token_provider
 
   def request(method, path, payload = nil)
     uri = URI.join(ensure_trailing_slash(base_url), strip_leading_slash(path))
@@ -102,7 +101,7 @@ class BotApiClient
     end
 
     request["Content-Type"] = "application/json"
-    bearer = token_provider ? token_provider.token : token
+    bearer = token_provider&.token
     request["Authorization"] = "Bearer #{bearer}" unless bearer.to_s.empty?
     request.body = payload.to_json if payload
     request
@@ -124,16 +123,16 @@ class PulseDiscordBot
     @prefix = ENV.fetch("DISCORD_PREFIX", "!")
     @allowlist = ENV.fetch("DISCORD_ALLOWLIST_USER_IDS", "").split(",").map(&:strip)
     @allowed_roles = ENV.fetch("DISCORD_ALLOWED_ROLE_IDS", "").split(",").map(&:strip)
-    token_provider = build_token_provider
+    @token_provider = build_token_provider
     @api = BotApiClient.new(
       base_url: ENV.fetch("PULSE_API_BASE_URL", "http://web:3000"),
-      token: ENV.fetch("PULSE_API_TOKEN", ""),
       token_provider: token_provider
     )
   end
 
   def run
     abort("DISCORD_BOT_TOKEN is required") if token.empty?
+    abort("KEYCLOAK_BOT_CLIENT_ID, KEYCLOAK_BOT_CLIENT_SECRET, and KEYCLOAK_INTERNAL_BASE_URL or KEYCLOAK_PUBLIC_BASE_URL are required for bot API auth") if token_provider.nil?
 
     bot = Discordrb::Commands::CommandBot.new(
       token: token,
@@ -151,7 +150,7 @@ class PulseDiscordBot
 
   private
 
-  attr_reader :token, :client_id, :prefix, :allowlist, :allowed_roles, :api
+  attr_reader :token, :client_id, :prefix, :allowlist, :allowed_roles, :api, :token_provider
 
   def build_token_provider
     client_id = ENV["KEYCLOAK_BOT_CLIENT_ID"].to_s
@@ -294,4 +293,4 @@ class PulseDiscordBot
   end
 end
 
-PulseDiscordBot.new.run
+PulseDiscordBot.new.run if $PROGRAM_NAME == __FILE__

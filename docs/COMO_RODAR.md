@@ -78,7 +78,9 @@ cp .env.example .env
 - `KEYCLOAK_WEB_CLIENT_SECRET`
 - `KEYCLOAK_BOT_CLIENT_SECRET`
 
-Observacao: o compose de desenvolvimento ja assume defaults para `KEYCLOAK_ADMIN` e `KEYCLOAK_ADMIN_PASSWORD` (`admin`/`admin`) se voce nao sobrescrever.
+Observacao: o compose de desenvolvimento ja assume defaults para `KC_BOOTSTRAP_ADMIN_USERNAME` e `KC_BOOTSTRAP_ADMIN_PASSWORD` (`admin`/`admin`) se voce nao sobrescrever.
+
+Observacao: o bot Discord agora usa apenas client credentials do Keycloak para falar com a API; nao existe mais `PULSE_API_TOKEN` nesse fluxo.
 
 3. Subir a stack de desenvolvimento:
 

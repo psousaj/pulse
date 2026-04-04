@@ -78,6 +78,7 @@ The project runs with 5 services:
 	- `RAILS_MASTER_KEY`
 	- `KEYCLOAK_WEB_CLIENT_SECRET`
 	- `KEYCLOAK_BOT_CLIENT_SECRET`
+	- `KC_BOOTSTRAP_ADMIN_PASSWORD` if you do not want the default `admin` bootstrap password
 	- `DISCORD_BOT_TOKEN` (if bot enabled)
 
 3. Start stack:
@@ -100,6 +101,7 @@ What this gives you:
 - the repository is bind-mounted into the containers
 - controller/model/view/CSS changes reload in the web app without rebuilding the image
 - Keycloak still runs in the same stack
+- the Discord bot authenticates to the Pulse API with Keycloak client credentials; no local API token is required
 
 Useful variants:
 

@@ -6,12 +6,15 @@ module Notifications
 
     class FakeHttpClient
       attr_accessor :use_ssl
+      attr_reader :requests
 
       def initialize(response)
         @response = response
+        @requests = []
       end
 
-      def request(_request)
+      def request(request)
+        @requests << request
         @response
       end
     end
@@ -146,6 +149,29 @@ module Notifications
       assert_equal "sent", delivery.status
       assert_not_nil delivery.delivered_at
       assert_equal [ "ops@example.com", "dev@example.com" ], recipients_captured
+    end
+
+    test "delivers discord channels through the webhook path" do
+      channel = NotificationChannel.create!(
+        account: @account,
+        kind: "discord",
+        name: "discord-webhook",
+        enabled: true,
+        is_default: true,
+        config_encrypted: { url: "https://discord.example/webhook" }.to_json,
+        throttle_minutes: 10
+      )
+
+      fake_http = FakeHttpClient.new(FakeResponse.new("204", "ok"))
+
+      with_temporary_class_method(Net::HTTP, :new, ->(_host, _port) { fake_http }) do
+        Notifications::Dispatcher.new(incident: @incident, event_type: "incident_opened").call
+      end
+
+      delivery = NotificationDelivery.find_by!(notification_channel: channel)
+      assert_equal "sent", delivery.status
+      assert_equal "application/json", fake_http.requests.first["Content-Type"]
+      assert_match "[DOWN] Service down (open)", fake_http.requests.first.body
     end
 
     private
