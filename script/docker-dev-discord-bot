@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+
+cd /rails
+
+bundle check || bundle install
+
+exec bundle exec ruby bot/main.rb

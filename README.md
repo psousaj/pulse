@@ -86,6 +86,40 @@ The project runs with 5 services:
 	docker compose up --build
 	```
 
+## Development Compose With Reload
+
+For day-to-day development with code mounted from the host and Rails reloading enabled, use the dedicated development compose file:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+What this gives you:
+
+- Rails runs in `development`
+- the repository is bind-mounted into the containers
+- controller/model/view/CSS changes reload in the web app without rebuilding the image
+- Keycloak still runs in the same stack
+
+Useful variants:
+
+```bash
+# run in background
+docker compose -f docker-compose.dev.yml up -d --build
+
+# include the Discord bot too
+docker compose -f docker-compose.dev.yml --profile discord up --build
+
+# stop the dev stack
+docker compose -f docker-compose.dev.yml down
+```
+
+When you change gems or OS-level dependencies, rebuild the image again:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build web worker discord-bot
+```
+
 ## Current Implemented Foundation
 
 - Core data model for services, checks, results, incidents, channels, heartbeat, API tokens, settings, and audit logs

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+cd /rails
+
+bundle check || bundle install
+./bin/rails db:prepare
+./bin/rails pulse:prepare_runtime_schemas
+
+exec ./bin/jobs start

@@ -3,7 +3,7 @@
   <% if oidc_configured? %>
     <p>Sign in with Keycloak to access the monitoring dashboard.</p>
     <p>
-      <%= button_to "Sign in with Keycloak", login_path, method: :post, class: "button" %>
+      <%= button_to "Sign in with Keycloak", login_path, method: :post, class: "button", form: { data: { turbo: false } } %>
     </p>
   <% else %>
     <p>Keycloak OIDC is not configured in this environment, so dashboard login is currently unavailable.</p>

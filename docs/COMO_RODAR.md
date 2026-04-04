@@ -24,6 +24,8 @@ Versao Ruby do projeto: `3.2.11` (arquivo `.ruby-version`).
 
 ## Opcao 1: Rodar com Docker (recomendado)
 
+Se a ideia e desenvolver com reload de codigo sem rebuild a cada alteracao, prefira o compose de desenvolvimento mais abaixo. Esta secao e mais proxima de um ambiente fechado/imutavel.
+
 1. Copiar o template de ambiente:
 
 ```bash
@@ -58,6 +60,84 @@ Isso sobe:
 
 ```bash
 docker compose down
+```
+
+## Opcao 1B: Rodar com Docker Compose de desenvolvimento
+
+Esse e o fluxo para editar codigo e ver o app atualizar sem rebuild a cada alteracao de controller, model, view, CSS ou service Rails.
+
+1. Copiar o template de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+2. Garantir no `.env` pelo menos:
+
+- `RAILS_MASTER_KEY`
+- `KEYCLOAK_WEB_CLIENT_SECRET`
+- `KEYCLOAK_BOT_CLIENT_SECRET`
+
+Observacao: o compose de desenvolvimento ja assume defaults para `KEYCLOAK_ADMIN` e `KEYCLOAK_ADMIN_PASSWORD` (`admin`/`admin`) se voce nao sobrescrever.
+
+3. Subir a stack de desenvolvimento:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+4. Acessar:
+
+- app Rails: http://localhost:3000
+- Keycloak: http://localhost:8081
+
+Usuario seed do Keycloak:
+
+- email: `operator@example.com`
+- senha: `pulse-dev-password`
+
+5. Se quiser incluir o bot Discord no mesmo fluxo:
+
+```bash
+docker compose -f docker-compose.dev.yml --profile discord up --build
+```
+
+6. Derrubar o ambiente:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### Quando precisa rebuild no compose dev
+
+Nao precisa rebuild para:
+
+- controllers
+- models
+- views
+- helpers
+- assets CSS
+- arquivos de configuracao lidos em runtime
+
+Precisa rebuild para:
+
+- `Gemfile` / `Gemfile.lock`
+- `Dockerfile.dev`
+- dependencias de sistema
+
+Comando:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build web worker discord-bot
+```
+
+### Quando precisa restart no compose dev
+
+O web recarrega bem em `development`. Se voce mexer em fluxo do worker ou do bot e quiser garantir processo limpo, reinicie explicitamente:
+
+```bash
+docker compose -f docker-compose.dev.yml restart worker
+docker compose -f docker-compose.dev.yml restart discord-bot
 ```
 
 ## Opcao 2: Rodar local com Ruby

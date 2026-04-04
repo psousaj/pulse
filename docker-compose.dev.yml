@@ -1,0 +1,125 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_STRICT: "false"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import
+
+  chrome:
+    image: browserless/chrome:latest
+    environment:
+      PORT: 3000
+      MAX_CONCURRENT_SESSIONS: 2
+      PREBOOT_CHROME: "true"
+      CONNECTION_TIMEOUT: 60000
+      EXIT_ON_HEALTH_FAILURE: "true"
+    expose:
+      - "3000"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      PORT: 3000
+      DEFAULT_ACCOUNT_NAME: Personal Account
+      DEFAULT_ACCOUNT_SLUG: personal
+      KEYCLOAK_PUBLIC_BASE_URL: ${KEYCLOAK_PUBLIC_BASE_URL:-http://localhost:8081}
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-pulse}
+      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-pulse-web}
+      KEYCLOAK_WEB_CLIENT_SECRET: ${KEYCLOAK_WEB_CLIENT_SECRET:-pulse-web-secret}
+      KEYCLOAK_WEB_SCOPES: ${KEYCLOAK_WEB_SCOPES:-openid profile email}
+      KEYCLOAK_BOT_CLIENT_ID: ${KEYCLOAK_BOT_CLIENT_ID:-pulse-bot}
+      KEYCLOAK_BOT_CLIENT_SECRET: ${KEYCLOAK_BOT_CLIENT_SECRET:-pulse-bot-secret}
+      KEYCLOAK_API_AUDIENCE: ${KEYCLOAK_API_AUDIENCE:-pulse-api}
+      KEYCLOAK_ACCOUNT_CLAIM: ${KEYCLOAK_ACCOUNT_CLAIM:-pulse_account_slug}
+      KEYCLOAK_PERMISSIONS_CLAIM: ${KEYCLOAK_PERMISSIONS_CLAIM:-pulse_permissions}
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost:3000/callback}
+      KEYCLOAK_POST_LOGOUT_REDIRECT_URI: ${KEYCLOAK_POST_LOGOUT_REDIRECT_URI:-http://localhost:3000/login}
+      FERRUM_BROWSER_URL: http://chrome:3000
+    command: ["bash", "/rails/script/docker-dev-web"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/rails
+    depends_on:
+      keycloak:
+        condition: service_started
+      chrome:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      DEFAULT_ACCOUNT_NAME: Personal Account
+      DEFAULT_ACCOUNT_SLUG: personal
+      KEYCLOAK_PUBLIC_BASE_URL: ${KEYCLOAK_PUBLIC_BASE_URL:-http://localhost:8081}
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-pulse}
+      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-pulse-web}
+      KEYCLOAK_WEB_CLIENT_SECRET: ${KEYCLOAK_WEB_CLIENT_SECRET:-pulse-web-secret}
+      KEYCLOAK_WEB_SCOPES: ${KEYCLOAK_WEB_SCOPES:-openid profile email}
+      KEYCLOAK_BOT_CLIENT_ID: ${KEYCLOAK_BOT_CLIENT_ID:-pulse-bot}
+      KEYCLOAK_BOT_CLIENT_SECRET: ${KEYCLOAK_BOT_CLIENT_SECRET:-pulse-bot-secret}
+      KEYCLOAK_API_AUDIENCE: ${KEYCLOAK_API_AUDIENCE:-pulse-api}
+      KEYCLOAK_ACCOUNT_CLAIM: ${KEYCLOAK_ACCOUNT_CLAIM:-pulse_account_slug}
+      KEYCLOAK_PERMISSIONS_CLAIM: ${KEYCLOAK_PERMISSIONS_CLAIM:-pulse_permissions}
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost:3000/callback}
+      KEYCLOAK_POST_LOGOUT_REDIRECT_URI: ${KEYCLOAK_POST_LOGOUT_REDIRECT_URI:-http://localhost:3000/login}
+      FERRUM_BROWSER_URL: http://chrome:3000
+    command: ["bash", "/rails/script/docker-dev-worker"]
+    volumes:
+      - .:/rails
+    depends_on:
+      keycloak:
+        condition: service_started
+      web:
+        condition: service_healthy
+
+  discord-bot:
+    profiles: ["discord"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      KEYCLOAK_PUBLIC_BASE_URL: ${KEYCLOAK_PUBLIC_BASE_URL:-http://localhost:8081}
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-pulse}
+      KEYCLOAK_BOT_CLIENT_ID: ${KEYCLOAK_BOT_CLIENT_ID:-pulse-bot}
+      KEYCLOAK_BOT_CLIENT_SECRET: ${KEYCLOAK_BOT_CLIENT_SECRET:-pulse-bot-secret}
+      PULSE_API_BASE_URL: http://web:3000
+    command: ["bash", "/rails/script/docker-dev-discord-bot"]
+    volumes:
+      - .:/rails
+    depends_on:
+      keycloak:
+        condition: service_started
+      web:
+        condition: service_healthy
