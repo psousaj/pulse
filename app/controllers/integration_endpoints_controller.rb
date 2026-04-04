@@ -1,5 +1,6 @@
 class IntegrationEndpointsController < ApplicationController
   before_action :require_login
+  before_action -> { require_permissions!("monitor.write", "admin") }
   before_action :set_integration_endpoint, only: %i[show edit update destroy enable disable rotate_secret]
 
   def index

@@ -1,12 +1,12 @@
 <main>
   <h1>Pulse Monitor Login</h1>
-  <% if github_oauth_configured? %>
-    <p>Sign in with GitHub to access the monitoring dashboard.</p>
+  <% if oidc_configured? %>
+    <p>Sign in with Keycloak to access the monitoring dashboard.</p>
     <p>
-      <a href="/auth/github">Sign in with GitHub</a>
+      <%= button_to "Sign in with Keycloak", login_path, method: :post, class: "button" %>
     </p>
   <% else %>
-    <p>GitHub OAuth is not configured in this environment, so dashboard login is currently unavailable.</p>
-    <p>Set <strong>GITHUB_CLIENT_ID</strong> and <strong>GITHUB_CLIENT_SECRET</strong> in the environment used by Rails, then restart the app.</p>
+    <p>Keycloak OIDC is not configured in this environment, so dashboard login is currently unavailable.</p>
+    <p>Set <strong>KEYCLOAK_PUBLIC_BASE_URL</strong>, <strong>KEYCLOAK_INTERNAL_BASE_URL</strong>, <strong>KEYCLOAK_REALM</strong>, <strong>KEYCLOAK_WEB_CLIENT_ID</strong>, <strong>KEYCLOAK_WEB_CLIENT_SECRET</strong>, and <strong>KEYCLOAK_REDIRECT_URI</strong>, then restart the app.</p>
   <% end %>
 </main>

@@ -13,16 +13,18 @@ New to Ruby/Rails or coming from TypeScript? See [docs/COMO_RODAR.md](docs/COMO_
 - Solid Queue + recurring jobs
 - Solid Cache
 - Ferrum-ready Chrome sidecar
+- Keycloak for OIDC login and JWT-based RBAC
 - Discord bot (separate container)
 
 ## Services (Docker Compose)
 
-The project runs with 4 services:
+The project runs with 5 services:
 
-1. `web` - Rails app (dashboard + API + public status page)
-2. `worker` - Solid Queue scheduler and job workers
-3. `chrome` - Headless Chrome for synthetic checks (Ferrum)
-4. `discord-bot` - alert/command bot process
+1. `keycloak` - local OIDC provider with seeded realm, clients, and operator account
+2. `web` - Rails app (dashboard + API + public status page)
+3. `worker` - Solid Queue scheduler and job workers
+4. `chrome` - Headless Chrome for synthetic checks (Ferrum)
+5. `discord-bot` - alert/command bot process
 
 ## Quick Start (Local Ruby)
 
@@ -40,11 +42,15 @@ The project runs with 4 services:
 	bin/rails db:seed
 	```
 
-3. If you want to use the dashboard login locally, also provide GitHub OAuth credentials before booting Rails:
+3. If you want to use the dashboard login locally, provide the Keycloak OIDC settings before booting Rails:
 
 	```bash
-	export GITHUB_CLIENT_ID=your_github_oauth_app_client_id
-	export GITHUB_CLIENT_SECRET=your_github_oauth_app_client_secret
+	export KEYCLOAK_PUBLIC_BASE_URL=http://localhost:8081
+	export KEYCLOAK_INTERNAL_BASE_URL=http://localhost:8081
+	export KEYCLOAK_REALM=pulse
+	export KEYCLOAK_WEB_CLIENT_ID=pulse-web
+	export KEYCLOAK_WEB_CLIENT_SECRET=pulse-web-secret
+	export KEYCLOAK_REDIRECT_URI=http://localhost:3000/callback
 	```
 
 4. Run web app:
@@ -70,9 +76,8 @@ The project runs with 4 services:
 2. Fill required secrets in `.env`:
 
 	- `RAILS_MASTER_KEY`
-	- `JWT_SECRET`
-	- `GITHUB_CLIENT_ID`
-	- `GITHUB_CLIENT_SECRET`
+	- `KEYCLOAK_WEB_CLIENT_SECRET`
+	- `KEYCLOAK_BOT_CLIENT_SECRET`
 	- `DISCORD_BOT_TOKEN` (if bot enabled)
 
 3. Start stack:
@@ -90,15 +95,9 @@ The project runs with 4 services:
 - Notification dispatcher scaffolding (Discord/Webhook/Email)
 - Heartbeat endpoint: `POST /api/heartbeat/:token`
 - Versioned management API scaffold: `/api/v1/services`, `/api/v1/incidents`
-- GitHub OAuth login scaffold for dashboard sessions
+- Keycloak OIDC login scaffold for dashboard sessions and JWT RBAC on the API
 
 ## Useful Commands
-
-- Issue API token for bot/client:
-
-  ```bash
-  bin/rails "pulse:issue_api_token[user@example.com,discord-bot]"
-  ```
 
 - Run recurring/scheduled workers:
 

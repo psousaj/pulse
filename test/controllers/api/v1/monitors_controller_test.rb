@@ -5,7 +5,6 @@ module Api
     class MonitorsControllerTest < ActionDispatch::IntegrationTest
       setup do
         @account = create_account
-        @user = create_user(account: @account)
         @service = create_service(account: @account, name: "API Service", slug: "api-service")
         @monitor = create_monitor(account: @account, service: @service, name: "Primary Monitor", slug: "primary-monitor")
         @endpoint = create_integration_endpoint(account: @account, name: "Prod Zabbix")
@@ -33,8 +32,10 @@ module Api
       end
 
       test "returns monitor inventory for valid token" do
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/monitors", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/monitors", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -46,8 +47,10 @@ module Api
       end
 
       test "shows monitor detail payload" do
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/monitors/#{@monitor.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/monitors/#{@monitor.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -64,7 +67,7 @@ module Api
       private
 
       def issue_access_token
-        issue_api_access_token(account: @account, user: @user)
+        issue_keycloak_token(audience: ENV.fetch("KEYCLOAK_API_AUDIENCE"), account_slug: @account.slug, permissions: %w[monitor.read])
       end
     end
   end

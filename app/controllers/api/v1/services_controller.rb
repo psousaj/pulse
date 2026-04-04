@@ -1,6 +1,8 @@
 module Api
   module V1
     class ServicesController < Api::ApplicationController
+      before_action -> { require_permissions!("monitor.read", "admin") }
+
       def index
         services = current_account.services.includes(:monitors).order(:name)
         render json: {

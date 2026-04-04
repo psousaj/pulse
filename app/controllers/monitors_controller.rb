@@ -1,5 +1,7 @@
 class MonitorsController < ApplicationController
   before_action :require_login
+  before_action -> { require_permissions!("monitor.read", "admin") }, only: %i[index show]
+  before_action -> { require_permissions!("monitor.write", "admin") }, only: %i[new create edit update destroy enable disable run_now]
   before_action :set_monitor, only: %i[show edit update destroy enable disable run_now]
   before_action :load_form_dependencies, only: %i[new create edit update]
 

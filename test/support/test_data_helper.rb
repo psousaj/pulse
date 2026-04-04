@@ -17,6 +17,23 @@ module TestDataHelper
     end
   end
 
+  def with_temporary_instance_method(klass, method_name, replacement)
+    backup_name = "__pulse_test_original_instance_#{method_name}"
+    had_original = klass.instance_methods(false).include?(method_name) || klass.private_instance_methods(false).include?(method_name)
+
+    klass.alias_method(backup_name, method_name) if had_original
+    klass.define_method(method_name, replacement)
+
+    yield
+  ensure
+    if had_original
+      klass.alias_method(method_name, backup_name)
+      klass.remove_method(backup_name)
+    else
+      klass.remove_method(method_name)
+    end
+  end
+
   def with_env(overrides)
     previous = {}
     overrides.each do |key, value|
@@ -28,6 +45,114 @@ module TestDataHelper
   ensure
     previous.each do |key, value|
       value.nil? ? ENV.delete(key) : ENV[key] = value
+    end
+  end
+
+  def with_keycloak_env(overrides = {})
+    defaults = {
+      "KEYCLOAK_PUBLIC_BASE_URL" => "http://localhost:8081",
+      "KEYCLOAK_INTERNAL_BASE_URL" => "http://localhost:8081",
+      "KEYCLOAK_REALM" => "pulse",
+      "KEYCLOAK_WEB_CLIENT_ID" => "pulse-web",
+      "KEYCLOAK_WEB_CLIENT_SECRET" => "pulse-web-secret",
+      "KEYCLOAK_BOT_CLIENT_ID" => "pulse-bot",
+      "KEYCLOAK_BOT_CLIENT_SECRET" => "pulse-bot-secret",
+      "KEYCLOAK_API_AUDIENCE" => "pulse-api",
+      "KEYCLOAK_ACCOUNT_CLAIM" => "pulse_account_slug",
+      "KEYCLOAK_PERMISSIONS_CLAIM" => "pulse_permissions",
+      "KEYCLOAK_REDIRECT_URI" => "http://localhost:3000/callback",
+      "KEYCLOAK_POST_LOGOUT_REDIRECT_URI" => "http://localhost:3000/login",
+      "PULSE_PUBLIC_BASE_URL" => "http://localhost:3000"
+    }
+
+    with_env(defaults.merge(overrides)) { yield }
+  end
+
+  def with_stubbed_keycloak_jwks
+    jwks = keycloak_jwks
+
+    with_temporary_class_method(Auth::JwksCache, :fetch, ->(force: false) { jwks }) do
+      yield
+    end
+  end
+
+  def keycloak_signing_key
+    @keycloak_signing_key ||= OpenSSL::PKey::RSA.generate(2048)
+  end
+
+  def keycloak_signing_kid
+    @keycloak_signing_kid ||= "pulse-test-kid"
+  end
+
+  def keycloak_jwks
+    @keycloak_jwks ||= { keys: [ JWT::JWK.new(keycloak_signing_key.public_key, kid: keycloak_signing_kid).export ] }
+  end
+
+  def issue_keycloak_token(audience:, account_slug:, permissions:, subject: "subject-#{SecureRandom.hex(4)}", username: "operator", email: "operator@example.com", nonce: nil, expires_at: 15.minutes.from_now, additional_claims: {})
+    now = Time.current
+    payload = {
+      "iss" => "#{ENV.fetch('KEYCLOAK_PUBLIC_BASE_URL')}/realms/#{ENV.fetch('KEYCLOAK_REALM')}",
+      "aud" => audience,
+      "sub" => subject,
+      "preferred_username" => username,
+      "email" => email,
+      ENV.fetch("KEYCLOAK_ACCOUNT_CLAIM", "pulse_account_slug") => account_slug,
+      ENV.fetch("KEYCLOAK_PERMISSIONS_CLAIM", "pulse_permissions") => permissions,
+      "iat" => now.to_i,
+      "nbf" => now.to_i,
+      "exp" => expires_at.to_i,
+      "jti" => SecureRandom.uuid
+    }.merge(additional_claims)
+    payload["nonce"] = nonce if nonce.present?
+
+    JWT.encode(payload, keycloak_signing_key, "RS256", kid: keycloak_signing_kid)
+  end
+
+  def build_keycloak_session_tokens(account:, permissions:, nonce:, subject: "subject-#{SecureRandom.hex(4)}", username: "operator", email: "operator@example.com")
+    {
+      "access_token" => issue_keycloak_token(
+        audience: ENV.fetch("KEYCLOAK_API_AUDIENCE"),
+        account_slug: account.slug,
+        permissions: permissions,
+        subject: subject,
+        username: username,
+        email: email
+      ),
+      "id_token" => issue_keycloak_token(
+        audience: ENV.fetch("KEYCLOAK_WEB_CLIENT_ID"),
+        account_slug: account.slug,
+        permissions: permissions,
+        subject: subject,
+        username: username,
+        email: email,
+        nonce: nonce
+      ),
+      "refresh_token" => "refresh-#{SecureRandom.hex(8)}",
+      "expires_in" => 3600
+    }
+  end
+
+  def with_keycloak_login(account:, permissions:, subject: "subject-#{SecureRandom.hex(4)}", username: "operator", email: "operator@example.com")
+    with_keycloak_env do
+      with_stubbed_keycloak_jwks do
+        post "/login"
+        redirect_uri = URI.parse(response.redirect_url)
+        params = Rack::Utils.parse_query(redirect_uri.query)
+        token_response = build_keycloak_session_tokens(
+          account: account,
+          permissions: permissions,
+          nonce: params.fetch("nonce"),
+          subject: subject,
+          username: username,
+          email: email
+        )
+
+        with_temporary_instance_method(Auth::OidcClient, :exchange_code_for_token, ->(code:) { token_response }) do
+          get "/callback", params: { code: "pulse-test-code", state: params.fetch("state") }
+        end
+
+        yield
+      end
     end
   end
 

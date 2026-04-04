@@ -5,7 +5,6 @@ module Api
     class IncidentsControllerTest < ActionDispatch::IntegrationTest
       setup do
         @account = create_account
-        @user = create_user(account: @account)
         @service = create_service(account: @account, name: "API Service", slug: "api-service")
         @monitor = create_monitor(account: @account, service: @service, name: "API Monitor", slug: "api-monitor")
       end
@@ -26,8 +25,10 @@ module Api
         other_monitor = create_monitor(account: other_account, service: other_service)
         create_incident(account: other_account, service: other_service, monitor: other_monitor, title: "External Incident")
 
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/incidents", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/incidents", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -43,8 +44,10 @@ module Api
       test "shows incident payload for current account" do
         incident = create_incident(account: @account, service: @service, monitor: @monitor, title: "Incident detail")
 
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/incidents/#{incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/incidents/#{incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -67,8 +70,10 @@ module Api
           title: "External Incident"
         )
 
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/incidents/#{external_incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/incidents/#{external_incident.id}", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :not_found
@@ -90,7 +95,7 @@ module Api
       end
 
       def issue_access_token
-        issue_api_access_token(account: @account, user: @user)
+        issue_keycloak_token(audience: ENV.fetch("KEYCLOAK_API_AUDIENCE"), account_slug: @account.slug, permissions: %w[incident.read])
       end
     end
   end

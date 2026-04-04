@@ -1,6 +1,8 @@
 module Api
   module V1
     class IncidentsController < Api::ApplicationController
+      before_action -> { require_permissions!("incident.read", "admin") }
+
       def index
         incidents = current_account.incidents.includes(:service, :monitor).order(opened_at: :desc).limit(100)
 

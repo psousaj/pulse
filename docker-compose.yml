@@ -1,6 +1,20 @@
-version: "3.9"
-
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_STRICT: "false"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import
+    restart: unless-stopped
+
   web:
     build:
       context: .
@@ -12,6 +26,7 @@ services:
       SQLITE_CACHE_DB: storage/production_cache.sqlite3
       SQLITE_QUEUE_DB: storage/production_queue.sqlite3
       SQLITE_CABLE_DB: storage/production_cable.sqlite3
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
       FERRUM_BROWSER_URL: http://chrome:3000
     command: ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
     ports:
@@ -19,6 +34,7 @@ services:
     volumes:
       - ./storage:/rails/storage
     depends_on:
+      - keycloak
       - chrome
     restart: unless-stopped
 
@@ -33,11 +49,13 @@ services:
       SQLITE_CACHE_DB: storage/production_cache.sqlite3
       SQLITE_QUEUE_DB: storage/production_queue.sqlite3
       SQLITE_CABLE_DB: storage/production_cable.sqlite3
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
       FERRUM_BROWSER_URL: http://chrome:3000
     command: ["bash", "-lc", "./bin/rails db:prepare && ./bin/jobs start"]
     volumes:
       - ./storage:/rails/storage
     depends_on:
+      - keycloak
       - web
     restart: unless-stopped
 
@@ -60,8 +78,10 @@ services:
       - .env
     environment:
       RAILS_ENV: production
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
       PULSE_API_BASE_URL: http://web:3000
     command: ["bash", "-lc", "bundle exec ruby bot/main.rb"]
     depends_on:
+      - keycloak
       - web
     restart: unless-stopped

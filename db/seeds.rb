@@ -1,3 +1,9 @@
+Account.find_or_create_by!(slug: ENV.fetch("DEFAULT_ACCOUNT_SLUG", "personal")) do |account|
+  account.name = ENV.fetch("DEFAULT_ACCOUNT_NAME", "Personal Account")
+  account.timezone = "UTC"
+  account.default_alert_interval_minutes = 10
+end
+
 HealthCheckType.find_or_create_by!(key: "http") do |type|
   type.name = "HTTP Endpoint"
   type.runner_class = "CheckRunners::HttpRunner"

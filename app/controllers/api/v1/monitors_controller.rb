@@ -1,6 +1,8 @@
 module Api
   module V1
     class MonitorsController < Api::ApplicationController
+      before_action -> { require_permissions!("monitor.read", "admin") }
+
       def index
         monitors = current_account.monitors.includes(:service, :monitor_source_bindings, :monitor_sla_rollups).order(:name)
 

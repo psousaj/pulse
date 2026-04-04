@@ -1,5 +1,6 @@
 class MonitorSourceBindingsController < ApplicationController
   before_action :require_login
+  before_action -> { require_permissions!("monitor.write", "admin") }
   before_action :set_monitor
   before_action :set_monitor_source_binding, only: %i[edit update destroy enable disable rotate_token]
   before_action :load_form_dependencies, only: %i[new create edit update]

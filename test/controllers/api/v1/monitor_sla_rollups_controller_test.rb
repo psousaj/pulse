@@ -5,7 +5,6 @@ module Api
     class MonitorSlaRollupsControllerTest < ActionDispatch::IntegrationTest
       setup do
         @account = create_account
-        @user = create_user(account: @account)
         @service = create_service(account: @account)
         @monitor = create_monitor(account: @account, service: @service, name: "SLA Monitor", slug: "sla-monitor")
         @rollup = MonitorSlaRollup.create!(
@@ -38,8 +37,10 @@ module Api
       end
 
       test "returns current account rollups only" do
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/monitor_sla_rollups", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/monitor_sla_rollups", headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -50,8 +51,10 @@ module Api
       end
 
       test "filters by monitor" do
-        with_env("JWT_SECRET" => "jwt-test-secret") do
-          get "/api/v1/monitor_sla_rollups", params: { monitor_id: @monitor.id }, headers: { "Authorization" => "Bearer #{issue_access_token}" }
+        with_keycloak_env do
+          with_stubbed_keycloak_jwks do
+            get "/api/v1/monitor_sla_rollups", params: { monitor_id: @monitor.id }, headers: { "Authorization" => "Bearer #{issue_access_token}" }
+          end
         end
 
         assert_response :success
@@ -61,7 +64,7 @@ module Api
       private
 
       def issue_access_token
-        issue_api_access_token(account: @account, user: @user)
+        issue_keycloak_token(audience: ENV.fetch("KEYCLOAK_API_AUDIENCE"), account_slug: @account.slug, permissions: %w[monitor.read])
       end
     end
   end

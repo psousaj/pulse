@@ -1,6 +1,8 @@
 module Api
   module V1
     class MonitorSlaRollupsController < Api::ApplicationController
+      before_action -> { require_permissions!("monitor.read", "admin") }
+
       def index
         rollups = current_account.monitor_sla_rollups.includes(:monitor).order(window_end: :desc, monitor_id: :asc)
         rollups = rollups.where(monitor_id: params[:monitor_id]) if params[:monitor_id].present?

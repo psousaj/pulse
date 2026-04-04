@@ -8,7 +8,7 @@ Opcao recomendada para iniciar sem dor: Docker Compose.
 
 ```bash
 cp .env.example .env
-# preencher RAILS_MASTER_KEY e JWT_SECRET no .env
+# preencher RAILS_MASTER_KEY e, se for usar Discord, DISCORD_BOT_TOKEN no .env
 docker compose up --build
 ```
 
@@ -33,13 +33,8 @@ cp .env.example .env
 2. Preencher no `.env`:
 
 - `RAILS_MASTER_KEY` com o conteudo de `config/master.key`
-- `JWT_SECRET` com um valor longo e aleatorio
 
-Exemplo para gerar segredo:
-
-```bash
-openssl rand -hex 32
-```
+O compose local ja vem preparado para subir o Keycloak com realm importado, entao os defaults de `KEYCLOAK_*` do template ja funcionam para desenvolvimento.
 
 3. Subir stack completa:
 
@@ -49,6 +44,7 @@ docker compose up --build
 
 Isso sobe:
 
+- keycloak (OIDC e RBAC local)
 - web (Rails)
 - worker (Solid Queue)
 - chrome (browserless)
@@ -104,17 +100,18 @@ cp .env.example .env
 Campos minimos para local:
 
 - `RAILS_MASTER_KEY`: pode usar `cat config/master.key`
-- `JWT_SECRET`: gere com `openssl rand -hex 32`
 - `SQLITE_MAX_CONNECTIONS`: opcional, so ajuste se quiser um pool diferente do padrao local `20`
 
-Para login web com GitHub, tambem precisa definir:
+Campos para login web com Keycloak:
 
-- `GITHUB_CLIENT_ID`
-- `GITHUB_CLIENT_SECRET`
+- `KEYCLOAK_PUBLIC_BASE_URL`
+- `KEYCLOAK_INTERNAL_BASE_URL`
+- `KEYCLOAK_REALM`
+- `KEYCLOAK_WEB_CLIENT_ID`
+- `KEYCLOAK_WEB_CLIENT_SECRET`
+- `KEYCLOAK_REDIRECT_URI`
 
 Observacao: agora o modo Ruby local carrega `.env` automaticamente no `bin/rails` e `bin/jobs`.
-
-Se essas duas variaveis nao estiverem presentes no boot da aplicacao, a rota `/auth/github` nao sera registrada pelo OmniAuth e o login web ficara indisponivel.
 
 4. Preparar banco:
 
@@ -151,7 +148,11 @@ bin/rails test
 Emitir token API para bot/cliente:
 
 ```bash
-bin/rails "pulse:issue_api_token[user@example.com,discord-bot]"
+curl -s \
+	-d grant_type=client_credentials \
+	-d client_id=pulse-bot \
+	-d client_secret=pulse-bot-secret \
+	http://localhost:8081/realms/pulse/protocol/openid-connect/token | jq .
 ```
 
 ## Mapa rapido para quem vem de TS
@@ -180,13 +181,11 @@ Nao e gambiarra. Em apps Rails, a pasta `bin/` vem por padrao.
 RAILS_MASTER_KEY=cole_aqui_o_valor_de_config_master_key
 ```
 
-`JWT_SECRET is missing`
+`Keycloak OIDC is not configured`
 
-- Defina no `.env`, por exemplo:
-
-```bash
-JWT_SECRET=gere_com_openssl_rand_-hex_32
-```
+- Confira se os `KEYCLOAK_*` do `.env` estao preenchidos.
+- No compose, o Keycloak local fica em `http://localhost:8081`.
+- O usuario seed do realm importado e `operator@example.com` com senha `pulse-dev-password`.
 
 `Could not find table 'solid_queue_recurring_tasks'`
 

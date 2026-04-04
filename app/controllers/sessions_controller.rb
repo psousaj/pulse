@@ -1,47 +1,58 @@
 class SessionsController < ApplicationController
-  skip_before_action :verify_authenticity_token, only: :create
-
   def new
     redirect_to root_path if logged_in?
   end
 
+  def start
+    return redirect_to(login_path, alert: "Keycloak OIDC is not configured. Set KEYCLOAK_* first.") unless oidc_configured?
+
+    state = SecureRandom.hex(24)
+    nonce = SecureRandom.hex(24)
+    session[:oidc_state] = state
+    session[:oidc_nonce] = nonce
+
+    redirect_to Auth::OidcClient.new.login_url(state:, nonce:), allow_other_host: true
+  end
+
   def create
-    auth = request.env["omniauth.auth"]
-    return redirect_to(login_path, alert: "GitHub authentication failed") if auth.blank?
+    if params[:error].present?
+      return redirect_to(login_path, alert: params[:error_description].presence || params[:error].to_s.humanize)
+    end
 
-    account = Account.first_or_create!(
-      name: ENV.fetch("DEFAULT_ACCOUNT_NAME", "Personal Account"),
-      slug: ENV.fetch("DEFAULT_ACCOUNT_SLUG", "personal")
-    )
+    expected_state = session.delete(:oidc_state).to_s
+    provided_state = params[:state].to_s
+    if expected_state.empty? || provided_state.empty? || !ActiveSupport::SecurityUtils.secure_compare(expected_state, provided_state)
+      return redirect_to(login_path, alert: "Invalid authentication state. Please try again.")
+    end
 
-    user = account.users.find_or_initialize_by(github_uid: auth["uid"].to_s)
-    user.email = auth.dig("info", "email").presence || "#{auth.dig('info', 'nickname')}@users.noreply.github.com"
-    user.name = auth.dig("info", "name").presence || auth.dig("info", "nickname").presence || "GitHub User"
-    user.role = "owner" if user.role.blank?
-    user.active = true
-    user.last_login_at = Time.current
-    user.save!
+    token_response = Auth::OidcClient.new.exchange_code_for_token(code: params[:code].to_s)
+    claims = persist_auth_session!(token_response)
 
-    session[:user_id] = user.id
+    expected_nonce = session.delete(:oidc_nonce).to_s
+    if expected_nonce.present? && claims["nonce"].to_s != expected_nonce
+      clear_auth_session!
+      return redirect_to(login_path, alert: "Invalid authentication nonce. Please try again.")
+    end
+
+    unless current_account.present?
+      clear_auth_session!
+      return redirect_to(login_path, alert: "The account from your Keycloak token is not available in Pulse.")
+    end
+
     redirect_to root_path, notice: "Signed in successfully"
-  rescue ActiveRecord::RecordInvalid => error
-    redirect_to login_path, alert: "Login failed: #{error.record.errors.full_messages.join(', ')}"
-  end
-
-  def failure
-    redirect_to login_path, alert: "GitHub authentication failed"
-  end
-
-  def provider
-    provider = params[:provider].to_s
-    return redirect_to(login_path, alert: "Unsupported authentication provider") unless provider == "github"
-    return redirect_to(login_path, alert: "GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.") unless github_oauth_configured?
-
-    redirect_to login_path, alert: "GitHub authentication is configured but the OmniAuth middleware did not handle the request."
+  rescue Auth::AuthenticationError => error
+    clear_auth_session!
+    redirect_to login_path, alert: error.message
   end
 
   def destroy
-    reset_session
-    redirect_to login_path, notice: "Signed out"
+    logout_url = oidc_configured? ? Auth::OidcClient.new.logout_url(id_token_hint: load_auth_token_bundle[:id_token].to_s) : nil
+    clear_auth_session!
+
+    if logout_url.present?
+      redirect_to logout_url, allow_other_host: true
+    else
+      redirect_to login_path, notice: "Signed out"
+    end
   end
 end
