@@ -1,153 +1,153 @@
 {
-  "realm": "pulse",
-  "enabled": true,
-  "displayName": "Pulse Local",
-  "registrationAllowed": false,
-  "rememberMe": true,
-  "resetPasswordAllowed": true,
-  "loginWithEmailAllowed": true,
-  "duplicateEmailsAllowed": false,
-  "clients": [
-    {
-      "clientId": "pulse-web",
-      "name": "Pulse Web",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "pulse-web-secret",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [
-        "http://localhost:3000/callback"
-      ],
-      "webOrigins": [
-        "http://localhost:3000"
-      ],
-      "attributes": {
-        "post.logout.redirect.uris": "http://localhost:3000/login"
-      },
-      "protocolMappers": [
+    "realm": "pulse",
+    "enabled": true,
+    "displayName": "Pulse Local",
+    "registrationAllowed": false,
+    "rememberMe": true,
+    "resetPasswordAllowed": true,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "clients": [
         {
-          "name": "pulse-account-slug",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.attribute": "pulse_account_slug",
-            "claim.name": "pulse_account_slug",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "true"
-          }
+            "clientId": "pulse-web",
+            "name": "Pulse Web",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "pulse-web-secret",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "redirectUris": [
+                "http://localhost:3000/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:3000"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "http://localhost:3000/login"
+            },
+            "protocolMappers": [
+                {
+                    "name": "pulse-account-slug",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "pulse_account_slug",
+                        "claim.name": "pulse_account_slug",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "pulse-permissions",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "pulse_permissions",
+                        "claim.value": "monitor.read monitor.write incident.read incident.resolve sla.manage admin",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "pulse-api-audience",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "aud",
+                        "claim.value": "pulse-api",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "false",
+                        "userinfo.token.claim": "false"
+                    }
+                }
+            ]
         },
         {
-          "name": "pulse-permissions",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "pulse_permissions",
-            "claim.value": "monitor.read monitor.write incident.read incident.resolve sla.manage admin",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "true"
-          }
-        },
-        {
-          "name": "pulse-api-audience",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "aud",
-            "claim.value": "pulse-api",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "false",
-            "userinfo.token.claim": "false"
-          }
+            "clientId": "pulse-bot",
+            "name": "Pulse Bot",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "pulse-bot-secret",
+            "standardFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": true,
+            "protocolMappers": [
+                {
+                    "name": "pulse-account-slug",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "pulse_account_slug",
+                        "claim.value": "personal",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "false",
+                        "userinfo.token.claim": "false"
+                    }
+                },
+                {
+                    "name": "pulse-permissions",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "pulse_permissions",
+                        "claim.value": "monitor.read incident.read",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "false",
+                        "userinfo.token.claim": "false"
+                    }
+                },
+                {
+                    "name": "pulse-api-audience",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "aud",
+                        "claim.value": "pulse-api",
+                        "jsonType.label": "String",
+                        "access.token.claim": "true",
+                        "id.token.claim": "false",
+                        "userinfo.token.claim": "false"
+                    }
+                }
+            ]
         }
-      ]
-    },
-    {
-      "clientId": "pulse-bot",
-      "name": "Pulse Bot",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "pulse-bot-secret",
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "protocolMappers": [
+    ],
+    "users": [
         {
-          "name": "pulse-account-slug",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "pulse_account_slug",
-            "claim.value": "personal",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "false",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "pulse-permissions",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "pulse_permissions",
-            "claim.value": "monitor.read incident.read",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "false",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "pulse-api-audience",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "aud",
-            "claim.value": "pulse-api",
-            "jsonType.label": "String",
-            "access.token.claim": "true",
-            "id.token.claim": "false",
-            "userinfo.token.claim": "false"
-          }
+            "username": "operator",
+            "enabled": true,
+            "emailVerified": true,
+            "firstName": "Pulse",
+            "lastName": "Operator",
+            "email": "operator@example.com",
+            "attributes": {
+                "pulse_account_slug": [
+                    "personal"
+                ]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "pulse-dev-password",
+                    "temporary": false
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "users": [
-    {
-      "username": "operator",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Pulse",
-      "lastName": "Operator",
-      "email": "operator@example.com",
-      "attributes": {
-        "pulse_account_slug": [
-          "personal"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "pulse-dev-password",
-          "temporary": false
-        }
-      ]
-    }
-  ]
+    ]
 }
