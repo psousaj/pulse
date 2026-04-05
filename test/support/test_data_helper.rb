@@ -165,16 +165,6 @@ module TestDataHelper
     )
   end
 
-  def create_user(account:, email: "user-#{SecureRandom.hex(4)}@example.com", role: "owner")
-    User.create!(
-      account: account,
-      email: email,
-      name: "Test User",
-      role: role,
-      active: true
-    )
-  end
-
   def create_service(account:, name: "Service #{SecureRandom.hex(3)}", slug: "service-#{SecureRandom.hex(4)}")
     Service.create!(
       account: account,

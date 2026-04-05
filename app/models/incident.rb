@@ -3,8 +3,6 @@ class Incident < ApplicationRecord
   belongs_to :service, optional: true
   belongs_to :monitor, class_name: "PulseMonitor", optional: true
   belongs_to :service_check, optional: true
-  belongs_to :acknowledged_by_user, class_name: "User", optional: true
-  belongs_to :resolved_by_user, class_name: "User", optional: true
   belongs_to :first_check_result, class_name: "CheckResult", optional: true
   belongs_to :last_check_result, class_name: "CheckResult", optional: true
   belongs_to :first_health_event, class_name: "HealthEvent", optional: true
@@ -38,16 +36,20 @@ class Incident < ApplicationRecord
     service || monitor&.service
   end
 
-  def acknowledge!(user)
-    update!(state: :acknowledged, acknowledged_at: Time.current, acknowledged_by_user: user)
+  def acknowledge!(actor = nil, user: nil)
+    update!(
+      state: :acknowledged,
+      acknowledged_at: Time.current,
+      acknowledged_by_ref: actor_reference_for(actor || user || Current.user)
+    )
   end
 
-  def resolve!(user: nil)
+  def resolve!(actor: nil, user: nil)
     resolved_time = Time.current
     update!(
       state: :resolved,
       resolved_at: resolved_time,
-      resolved_by_user: user,
+      resolved_by_ref: actor_reference_for(actor || user || Current.user),
       duration_seconds: duration_between(opened_at, resolved_time)
     )
   end
@@ -58,5 +60,12 @@ class Incident < ApplicationRecord
     return nil if start_time.blank? || end_time.blank?
 
     [ (end_time - start_time).to_i, 0 ].max
+  end
+
+  def actor_reference_for(actor)
+    return nil if actor.blank?
+    return actor if actor.is_a?(String)
+
+    actor.subject.presence || actor.email.presence || actor.username.presence || actor.id.to_s.presence || actor.to_s
   end
 end

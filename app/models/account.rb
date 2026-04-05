@@ -1,5 +1,4 @@
 class Account < ApplicationRecord
-  has_many :users, dependent: :destroy
   has_many :services, dependent: :destroy
   has_many :monitors, class_name: "PulseMonitor", dependent: :destroy
   has_many :service_checks, dependent: :delete_all
